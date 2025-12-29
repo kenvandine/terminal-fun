@@ -566,6 +566,99 @@ Happy learning!
 """
             readme_path.write_text(readme_content)
 
+        # Create a .vimrc with syntax highlighting enabled
+        vimrc_path = virtual_home / ".vimrc"
+        if not vimrc_path.exists():
+            vimrc_content = """\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"
+\" Terminal Fun Vim Configuration
+\" Optimized for learning with syntax highlighting enabled
+\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"
+
+" Enable syntax highlighting
+syntax on
+
+" Enable file type detection and plugins
+filetype plugin indent on
+
+" Set color scheme (works well with Ubuntu terminal colors)
+set background=dark
+
+" Show line numbers
+set number
+
+" Highlight current line
+set cursorline
+
+" Enable mouse support (useful for beginners)
+set mouse=a
+
+" Tab settings
+set tabstop=4           " Tab width
+set shiftwidth=4        " Indent width
+set expandtab           " Use spaces instead of tabs
+set smartindent         " Auto-indent new lines
+
+" Search settings
+set ignorecase          " Ignore case in search
+set smartcase           " Unless search contains uppercase
+set hlsearch            " Highlight search results
+set incsearch           " Incremental search
+
+" Show matching brackets
+set showmatch
+
+" Enable auto-completion menu
+set wildmenu
+set wildmode=longest:full,full
+
+" Display settings
+set ruler               " Show cursor position
+set showcmd             " Show incomplete commands
+set laststatus=2        " Always show status line
+
+" Better backspace behavior
+set backspace=indent,eol,start
+
+" Keep more context when scrolling
+set scrolloff=5
+
+" Encoding
+set encoding=utf-8
+
+" Enable persistent undo
+set undofile
+set undodir=~/.vim/undodir
+
+" Syntax highlighting for specific languages
+" (These are automatically enabled when files are detected)
+" Supported: C, C++, Python, JavaScript, Java, C#, Zig, Rust, YAML, JSON
+
+" Language-specific settings
+autocmd FileType python setlocal tabstop=4 shiftwidth=4 expandtab
+autocmd FileType javascript setlocal tabstop=2 shiftwidth=2 expandtab
+autocmd FileType java setlocal tabstop=4 shiftwidth=4 expandtab
+autocmd FileType c,cpp setlocal tabstop=4 shiftwidth=4 expandtab
+autocmd FileType cs setlocal tabstop=4 shiftwidth=4 expandtab
+autocmd FileType rust setlocal tabstop=4 shiftwidth=4 expandtab
+autocmd FileType zig setlocal tabstop=4 shiftwidth=4 expandtab
+autocmd FileType yaml,yml setlocal tabstop=2 shiftwidth=2 expandtab
+autocmd FileType json setlocal tabstop=2 shiftwidth=2 expandtab
+
+" Visual feedback
+set visualbell          " Use visual bell instead of beeping
+
+" Status line (shows file type and position)
+set statusline=%F%m%r%h%w\\ [TYPE=%Y]\\ [POS=%l,%v][%p%%]
+
+" Welcome message for new users
+" Press 'i' to enter Insert mode, 'Esc' to return to Normal mode
+"""
+            vimrc_path.write_text(vimrc_content)
+
+        # Create .vim directory for undo history
+        vim_dir = virtual_home / ".vim" / "undodir"
+        vim_dir.mkdir(parents=True, exist_ok=True)
+
         return str(virtual_home)
 
     def load_first_lesson(self):
