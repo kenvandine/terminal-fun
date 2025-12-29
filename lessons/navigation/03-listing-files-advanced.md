@@ -1,7 +1,7 @@
 ---
 title: Listing Files with Advanced Options
 description: Learn advanced ls options to view files in different ways
-order: 4
+order: 3
 ---
 
 ## Instructions

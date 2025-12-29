@@ -1,7 +1,7 @@
 ---
 title: Creating Directories with mkdir
 description: Learn how to create new folders using mkdir
-order: 3
+order: 2
 ---
 
 ## Instructions

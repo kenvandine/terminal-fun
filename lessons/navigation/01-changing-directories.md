@@ -1,7 +1,7 @@
 ---
 title: Changing Directories with cd
 description: Learn how to navigate between folders using the cd command
-order: 2
+order: 1
 ---
 
 ## Instructions
