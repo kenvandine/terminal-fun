@@ -26,6 +26,17 @@ username@computername:~$
 
 The `~` symbol represents your home directory - this is where you start when you open a new terminal window.
 
+### Terminal Tips: Copy and Paste
+
+Unlike regular applications, the terminal uses different keyboard shortcuts for copying and pasting:
+
+- **Copy**: Select text with your mouse, then press **`Ctrl+Shift+C`**
+- **Paste**: Press **`Ctrl+Shift+V`**
+
+**Why the Shift key?** Regular `Ctrl+C` is used to stop (interrupt) running programs in the terminal, so we need `Ctrl+Shift+C` for copying instead.
+
+**Pro Tip:** You can usually paste into the terminal by middle-clicking your mouse or touchpad (if you have a middle button or can click with three fingers).
+
 ### Your First Command
 
 The most basic command is `pwd`, which stands for "Print Working Directory". It tells you where you are in your file system right now.

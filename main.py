@@ -8,8 +8,9 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 gi.require_version('Vte', '3.91')
+gi.require_version('Gdk', '4.0')
 
-from gi.repository import Gtk, Adw, Vte, GLib, Pango, Gio, GObject
+from gi.repository import Gtk, Adw, Vte, GLib, Pango, Gio, GObject, Gdk
 import sys
 import os
 from pathlib import Path
@@ -401,6 +402,11 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         font.set_size(12 * Pango.SCALE)
         self.terminal.set_font(font)
 
+        # Add keyboard shortcuts for copy/paste
+        key_controller = Gtk.EventControllerKey()
+        key_controller.connect("key-pressed", self.on_terminal_key_pressed)
+        self.terminal.add_controller(key_controller)
+
         # Spawn shell with isolated environment
         shell = os.environ.get("SHELL", "/bin/bash")
 
@@ -591,6 +597,24 @@ Happy learning!
             )
 
         self.update_complete_button()
+
+    def on_terminal_key_pressed(self, controller, keyval, keycode, state):
+        """Handle keyboard shortcuts in the terminal."""
+        # Check for Ctrl+Shift modifier
+        ctrl_shift = (state & Gdk.ModifierType.CONTROL_MASK and
+                      state & Gdk.ModifierType.SHIFT_MASK)
+
+        if ctrl_shift:
+            # Ctrl+Shift+C - Copy
+            if keyval == Gdk.keyval_from_name('c') or keyval == Gdk.keyval_from_name('C'):
+                self.terminal.copy_clipboard_format(Vte.Format.TEXT)
+                return True
+            # Ctrl+Shift+V - Paste
+            elif keyval == Gdk.keyval_from_name('v') or keyval == Gdk.keyval_from_name('V'):
+                self.terminal.paste_clipboard()
+                return True
+
+        return False
 
     def on_prev_clicked(self, button):
         """Load previous lesson."""
