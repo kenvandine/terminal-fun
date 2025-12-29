@@ -9,7 +9,7 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 gi.require_version('Vte', '3.91')
 
-from gi.repository import Gtk, Adw, Vte, GLib, Pango, Gio
+from gi.repository import Gtk, Adw, Vte, GLib, Pango, Gio, GObject
 import sys
 import os
 from pathlib import Path
@@ -315,7 +315,13 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         header = Adw.HeaderBar()
         header.set_show_end_title_buttons(True)
         
-        # Progress button
+        # Index button (left side)
+        self.index_button = Gtk.Button.new_from_icon_name("view-grid-symbolic")
+        self.index_button.set_tooltip_text("Lesson Index")
+        self.index_button.connect("clicked", self.on_index_clicked)
+        header.pack_start(self.index_button)
+        
+        # Progress button (left side)
         self.progress_button = Gtk.Button.new_from_icon_name("view-list-symbolic")
         self.progress_button.set_tooltip_text("View Progress")
         self.progress_button.connect("clicked", self.on_progress_clicked)
@@ -511,6 +517,18 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         if current_index < len(lessons) - 1:
             self.load_lesson(self.current_category, lessons[current_index + 1]['slug'])
     
+    def on_index_clicked(self, button):
+        """Show lesson index dialog."""
+        dialog = LessonIndexDialog(self, self.lesson_loader, self.progress_tracker)
+        dialog.connect("lesson-selected", self.on_lesson_selected_from_index)
+        dialog.present()
+    
+    def on_lesson_selected_from_index(self, dialog, category, lesson_slug):
+        """Handle lesson selection from index."""
+        print(f"DEBUG: Signal received - loading {category}/{lesson_slug}")
+        dialog.close()
+        self.load_lesson(category, lesson_slug)
+    
     def on_progress_clicked(self, button):
         """Show progress dialog."""
         dialog = ProgressDialog(self)
@@ -526,6 +544,186 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         dialog.add_response("ok", "OK")
         dialog.connect("response", lambda d, r: d.destroy())
         dialog.present()
+
+
+class LessonIndexDialog(Adw.Window):
+    """Lesson index/navigation dialog."""
+    
+    __gsignals__ = {
+        'lesson-selected': (GObject.SignalFlags.RUN_FIRST, None, (str, str))
+    }
+    
+    def __init__(self, parent, lesson_loader, progress_tracker):
+        super().__init__(transient_for=parent, title="Lesson Index", modal=True)
+        self.set_default_size(700, 600)
+        self.lesson_loader = lesson_loader
+        self.progress_tracker = progress_tracker
+        
+        header = Adw.HeaderBar()
+        header.set_show_end_title_buttons(True)
+        
+        # Main content box
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        main_box.set_vexpand(True)
+        main_box.set_hexpand(True)
+        
+        # Title and description
+        title_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        title_box.set_margin_start(20)
+        title_box.set_margin_end(20)
+        title_box.set_margin_top(20)
+        title_box.set_margin_bottom(12)
+        
+        title_label = Gtk.Label(label="Lesson Index")
+        title_label.add_css_class("title-2")
+        title_label.set_halign(Gtk.Align.START)
+        title_box.append(title_label)
+        
+        desc_label = Gtk.Label(label="Choose a lesson to jump to")
+        desc_label.add_css_class("dim-label")
+        desc_label.set_halign(Gtk.Align.START)
+        title_box.append(desc_label)
+        
+        main_box.append(title_box)
+        
+        # Scrolled window for lessons
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_vexpand(True)
+        scrolled.set_hexpand(True)
+        
+        # Content box for all categories
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
+        content_box.set_margin_start(20)
+        content_box.set_margin_end(20)
+        content_box.set_margin_top(12)
+        content_box.set_margin_bottom(20)
+        
+        # Add each category
+        categories = self.lesson_loader.get_categories()
+        for category in categories:
+            category_widget = self._create_category_widget(category)
+            content_box.append(category_widget)
+        
+        scrolled.set_child(content_box)
+        main_box.append(scrolled)
+        
+        # Wrap everything
+        outer_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        outer_box.append(header)
+        outer_box.append(main_box)
+        
+        self.set_content(outer_box)
+    
+    def _create_category_widget(self, category: str):
+        """Create a widget for a category with its lessons."""
+        category_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        
+        # Category header
+        category_label = Gtk.Label(label=self.lesson_loader.get_category_display_name(category))
+        category_label.add_css_class("title-3")
+        category_label.set_halign(Gtk.Align.START)
+        category_box.append(category_label)
+        
+        # Lessons in this category
+        lessons = self.lesson_loader.get_lessons(category)
+        
+        if lessons:
+            list_box = Gtk.ListBox()
+            list_box.add_css_class("boxed-list")
+            list_box.set_selection_mode(Gtk.SelectionMode.NONE)
+            
+            # Store lesson data on the list_box for the signal handler
+            list_box._lessons_data = []
+            
+            for lesson in lessons:
+                row = self._create_lesson_row(category, lesson)
+                # Store the lesson data on the row itself
+                row._category = category
+                row._lesson_slug = lesson['slug']
+                list_box.append(row)
+                list_box._lessons_data.append((category, lesson['slug']))
+            
+            # Connect to row-activated signal on the ListBox
+            list_box.connect("row-activated", self._on_row_activated)
+            
+            category_box.append(list_box)
+        else:
+            empty_label = Gtk.Label(label="No lessons in this category")
+            empty_label.add_css_class("dim-label")
+            empty_label.set_halign(Gtk.Align.START)
+            empty_label.set_margin_start(12)
+            category_box.append(empty_label)
+        
+        return category_box
+    
+    def _on_row_activated(self, list_box, row):
+        """Handle row activation."""
+        category = row._category
+        lesson_slug = row._lesson_slug
+        print(f"DEBUG: Row activated - emitting signal for {category}/{lesson_slug}")
+        self.emit("lesson-selected", category, lesson_slug)
+    
+    def _create_lesson_row(self, category: str, lesson: dict):
+        """Create a row for a single lesson."""
+        row = Gtk.ListBoxRow()
+        row.set_activatable(True)
+        
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        box.set_margin_start(12)
+        box.set_margin_end(12)
+        box.set_margin_top(8)
+        box.set_margin_bottom(8)
+        
+        # Status indicator
+        status = self.progress_tracker.get_lesson_status(category, lesson['slug'])
+        if status == 'completed':
+            status_icon = "✓"
+            status_css = "success"
+        elif status == 'failed':
+            status_icon = "✗"
+            status_css = "error"
+        elif status == 'in_progress':
+            status_icon = "◐"
+            status_css = "warning"
+        else:
+            status_icon = "○"
+            status_css = ""
+        
+        icon_label = Gtk.Label(label=status_icon)
+        icon_label.set_size_request(30, -1)
+        if status_css:
+            icon_label.add_css_class(status_css)
+        box.append(icon_label)
+        
+        # Lesson info
+        lesson_info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        lesson_info_box.set_hexpand(True)
+        
+        title_label = Gtk.Label(label=lesson['title'])
+        title_label.set_halign(Gtk.Align.START)
+        title_label.add_css_class("heading")
+        lesson_info_box.append(title_label)
+        
+        if lesson.get('description'):
+            desc_label = Gtk.Label(label=lesson['description'])
+            desc_label.set_halign(Gtk.Align.START)
+            desc_label.add_css_class("dim-label")
+            desc_label.add_css_class("caption")
+            desc_label.set_wrap(True)
+            desc_label.set_xalign(0)
+            lesson_info_box.append(desc_label)
+        
+        box.append(lesson_info_box)
+        
+        # Arrow icon
+        arrow_icon = Gtk.Image.new_from_icon_name("go-next-symbolic")
+        arrow_icon.add_css_class("dim-label")
+        box.append(arrow_icon)
+        
+        row.set_child(box)
+        
+        return row
 
 
 class ProgressDialog(Adw.Window):
@@ -632,4 +830,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

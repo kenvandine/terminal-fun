@@ -34,6 +34,11 @@ class LessonLoader:
         """Get all available categories."""
         return sorted(self._lessons_cache.keys())
     
+    def get_category_display_name(self, category: str) -> str:
+        """Get a human-readable name for a category."""
+        # Convert directory name to display name
+        return category.replace('-', ' ').replace('_', ' ').title() 
+
     def get_lessons(self, category: str) -> List[Dict]:
         """Get all lessons in a category."""
         if category not in self._lessons_cache:
