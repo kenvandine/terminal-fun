@@ -402,6 +402,9 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         font.set_size(12 * Pango.SCALE)
         self.terminal.set_font(font)
 
+        # Set Ubuntu-style terminal colors
+        self._setup_terminal_colors()
+
         # Add keyboard shortcuts for copy/paste
         key_controller = Gtk.EventControllerKey()
         key_controller.connect("key-pressed", self.on_terminal_key_pressed)
@@ -460,6 +463,66 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         # Load first lesson
         GLib.idle_add(self.load_first_lesson)
 
+
+    def _setup_terminal_colors(self):
+        """Configure Ubuntu-style terminal colors matching GNOME Terminal."""
+        # Ubuntu's signature dark purple background (aubergine)
+        background = Gdk.RGBA()
+        background.parse("#300a24")
+
+        # Light foreground text
+        foreground = Gdk.RGBA()
+        foreground.parse("#ffffff")
+
+        # Ubuntu orange cursor
+        cursor = Gdk.RGBA()
+        cursor.parse("#f37329")
+
+        # 16-color ANSI palette matching Ubuntu/GNOME Terminal
+        palette = [
+            # Dark colors (0-7)
+            Gdk.RGBA(),  # Black
+            Gdk.RGBA(),  # Red
+            Gdk.RGBA(),  # Green
+            Gdk.RGBA(),  # Yellow
+            Gdk.RGBA(),  # Blue
+            Gdk.RGBA(),  # Magenta
+            Gdk.RGBA(),  # Cyan
+            Gdk.RGBA(),  # White
+            # Bright colors (8-15)
+            Gdk.RGBA(),  # Bright Black
+            Gdk.RGBA(),  # Bright Red
+            Gdk.RGBA(),  # Bright Green
+            Gdk.RGBA(),  # Bright Yellow
+            Gdk.RGBA(),  # Bright Blue
+            Gdk.RGBA(),  # Bright Magenta
+            Gdk.RGBA(),  # Bright Cyan
+            Gdk.RGBA(),  # Bright White
+        ]
+
+        # Dark colors
+        palette[0].parse("#2e3436")   # Black (dark grey)
+        palette[1].parse("#cc0000")   # Red
+        palette[2].parse("#4e9a06")   # Green
+        palette[3].parse("#c4a000")   # Yellow
+        palette[4].parse("#3465a4")   # Blue
+        palette[5].parse("#75507b")   # Magenta
+        palette[6].parse("#06989a")   # Cyan
+        palette[7].parse("#d3d7cf")   # White (light grey)
+
+        # Bright colors
+        palette[8].parse("#555753")   # Bright Black (grey)
+        palette[9].parse("#ef2929")   # Bright Red
+        palette[10].parse("#8ae234")  # Bright Green
+        palette[11].parse("#fce94f")  # Bright Yellow
+        palette[12].parse("#729fcf")  # Bright Blue
+        palette[13].parse("#ad7fa8")  # Bright Magenta
+        palette[14].parse("#34e2e2")  # Bright Cyan
+        palette[15].parse("#eeeeec")  # Bright White
+
+        # Apply colors to terminal
+        self.terminal.set_colors(foreground, background, palette)
+        self.terminal.set_color_cursor(cursor)
 
     def _setup_virtual_home(self) -> str:
         """Set up an isolated virtual home directory for the terminal."""
