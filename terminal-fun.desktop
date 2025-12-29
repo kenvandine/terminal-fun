@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Terminal Fun
+GenericName=Command Line Learning Tool
+Comment=Master the Linux command line through interactive lessons
+Exec=terminal-fun
+Icon=${SNAP}/meta/gui/terminal-fun.png
+Terminal=false
+Type=Application
+Categories=Education;ComputerScience;GTK;
+Keywords=terminal;command-line;shell;bash;learning;education;tutorial;
+StartupNotify=true
+StartupWMClass=terminal-fun

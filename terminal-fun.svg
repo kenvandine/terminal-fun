@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="terminalGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#5e5c64;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#241f31;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="screenGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e1e2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#181825;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="highlightGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#62a0ea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#99c1f1;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#terminalGradient)"/>
+
+  <!-- Terminal window background -->
+  <rect x="80" y="120" width="352" height="280" rx="16" fill="url(#screenGradient)"/>
+
+  <!-- Terminal window header bar -->
+  <rect x="80" y="120" width="352" height="40" rx="16" fill="#3d3846"/>
+  <rect x="80" y="144" width="352" height="16" fill="#3d3846"/>
+
+  <!-- Window control buttons -->
+  <circle cx="108" cy="140" r="8" fill="#f66151"/>
+  <circle cx="136" cy="140" r="8" fill="#ffc83d"/>
+  <circle cx="164" cy="140" r="8" fill="#57e389"/>
+
+  <!-- Terminal prompt and text -->
+  <text x="100" y="200" font-family="monospace" font-size="24" font-weight="bold" fill="#33d17a">$</text>
+  <text x="130" y="200" font-family="monospace" font-size="24" fill="#99c1f1">ls -la</text>
+
+  <!-- File listing simulation -->
+  <text x="100" y="240" font-family="monospace" font-size="16" fill="#deddda">drwxr-xr-x lessons</text>
+  <text x="100" y="270" font-family="monospace" font-size="16" fill="#deddda">-rwxr-xr-x main.py</text>
+  <text x="100" y="300" font-family="monospace" font-size="16" fill="#deddda">-rw-r--r-- README.md</text>
+
+  <!-- Cursor blink -->
+  <rect x="232" y="182" width="12" height="24" fill="#99c1f1" opacity="0.9"/>
+
+  <!-- Fun element: Graduation cap overlay -->
+  <g transform="translate(340, 300)">
+    <!-- Cap board -->
+    <path d="M -50 0 L 50 0 L 40 10 L -40 10 Z" fill="#3584e4"/>
+    <!-- Cap top -->
+    <ellipse cx="0" cy="0" rx="50" ry="12" fill="#1c71d8"/>
+    <!-- Tassel -->
+    <rect x="35" y="-5" width="3" height="30" fill="#f9f06b"/>
+    <circle cx="36.5" cy="26" r="6" fill="#f9f06b"/>
+  </g>
+
+  <!-- Sparkle elements for "fun" -->
+  <g fill="#f9f06b" opacity="0.8">
+    <circle cx="120" cy="100" r="4"/>
+    <circle cx="380" cy="95" r="3"/>
+    <circle cx="410" cy="360" r="4"/>
+    <circle cx="100" cy="380" r="3"/>
+  </g>
+
+  <!-- Subtle border -->
+  <circle cx="256" cy="256" r="240" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.1"/>
+</svg>
