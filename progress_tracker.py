@@ -44,7 +44,7 @@ class ProgressTracker:
             print(f"Warning: Could not save progress: {e}")
     
     def get_lesson_status(self, category: str, lesson_slug: str) -> str:
-        """Get the status of a lesson: 'completed', 'failed', 'in_progress', or 'not_started'."""
+        """Get the status of a lesson: 'completed' or 'not_started'."""
         key = f"{category}/{lesson_slug}"
         lesson_data = self.progress['lessons'].get(key, {})
         return lesson_data.get('status', 'not_started')
@@ -59,15 +59,14 @@ class ProgressTracker:
         self.progress['lessons'][key]['completed_at'] = datetime.now().isoformat()
         self._save_progress()
     
-    def fail_lesson(self, category: str, lesson_slug: str):
-        """Mark a lesson as failed."""
+    def uncomplete_lesson(self, category: str, lesson_slug: str):
+        """Mark a lesson as not completed (reset)."""
         key = f"{category}/{lesson_slug}"
-        if key not in self.progress['lessons']:
-            self.progress['lessons'][key] = {}
-        
-        self.progress['lessons'][key]['status'] = 'failed'
-        self.progress['lessons'][key]['failed_at'] = datetime.now().isoformat()
-        self._save_progress()
+        if key in self.progress['lessons']:
+            self.progress['lessons'][key]['status'] = 'not_started'
+            if 'completed_at' in self.progress['lessons'][key]:
+                del self.progress['lessons'][key]['completed_at']
+            self._save_progress()
     
     def complete_exercise(self, category: str, lesson_slug: str, exercise_index: int):
         """Mark an exercise as completed."""
@@ -84,21 +83,13 @@ class ProgressTracker:
         }
         self._save_progress()
     
-    def fail_exercise(self, category: str, lesson_slug: str, exercise_index: int):
-        """Mark an exercise as failed."""
+    def get_exercise_status(self, category: str, lesson_slug: str, exercise_index: int) -> str:
+        """Get the status of an exercise: 'completed' or 'not_started'."""
         key = f"{category}/{lesson_slug}"
-        if key not in self.progress['lessons']:
-            self.progress['lessons'][key] = {'exercises': {}}
-        
-        if 'exercises' not in self.progress['lessons'][key]:
-            self.progress['lessons'][key]['exercises'] = {}
-        
-        self.progress['lessons'][key]['exercises'][str(exercise_index)] = {
-            'status': 'failed',
-            'failed_at': datetime.now().isoformat()
-        }
-        self._save_progress()
-    
+        lesson_data = self.progress['lessons'].get(key, {})
+        exercises = lesson_data.get('exercises', {})
+        exercise_data = exercises.get(str(exercise_index), {})
+        return exercise_data.get('status', 'not_started')
     
     def get_all_progress(self) -> Dict:
         """Get all progress data."""
@@ -109,16 +100,9 @@ class ProgressTracker:
         lessons = self.progress.get('lessons', {})
         total = len(lessons)
         completed = sum(1 for l in lessons.values() if l.get('status') == 'completed')
-        failed = sum(1 for l in lessons.values() if l.get('status') == 'failed')
-        in_progress = sum(1 for l in lessons.values() 
-                         if l.get('status') == 'in_progress' or 
-                         (l.get('exercises') and l.get('status') != 'completed'))
         
         return {
             'total': total,
             'completed': completed,
-            'failed': failed,
-            'in_progress': in_progress,
-            'not_started': total - completed - failed - in_progress
+            'not_started': total - completed
         }
-
