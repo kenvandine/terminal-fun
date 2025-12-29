@@ -310,6 +310,9 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         self.current_category: Optional[str] = None
         self.current_lesson_slug: Optional[str] = None
 
+        # Set up virtual home directory for isolated terminal
+        self.virtual_home = self._setup_virtual_home()
+
         # Header bar
         header = Adw.HeaderBar()
         header.set_show_end_title_buttons(True)
@@ -398,9 +401,17 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         font.set_size(12 * Pango.SCALE)
         self.terminal.set_font(font)
 
-        # Spawn shell
+        # Spawn shell with isolated environment
         shell = os.environ.get("SHELL", "/bin/bash")
-        working_dir = os.environ.get("HOME", None)
+
+        # Create custom environment for the virtual home
+        # Start with current environment and override HOME
+        env_dict = dict(os.environ)
+        env_dict["HOME"] = self.virtual_home
+        env_dict["PWD"] = self.virtual_home
+
+        # Convert to list of "KEY=VALUE" strings for spawn_async
+        envv = [f"{key}={value}" for key, value in env_dict.items()]
 
         # Spawn the shell process using spawn_async
         # For VTE 3.91, spawn_async signature is:
@@ -409,9 +420,9 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         # Callback signature: callback(source_object, result, user_data)
         self.terminal.spawn_async(
             Vte.PtyFlags.DEFAULT,  # pty_flags
-            working_dir,           # working_directory  
+            self.virtual_home,     # working_directory (start in virtual home)
             [shell],               # argv
-            None,                  # envv (None = inherit environment)
+            envv,                  # envv (custom environment with virtual HOME)
             GLib.SpawnFlags.DEFAULT,  # spawn_flags
             None,                  # child_setup
             None,                  # child_setup_data
@@ -443,6 +454,50 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         # Load first lesson
         GLib.idle_add(self.load_first_lesson)
 
+
+    def _setup_virtual_home(self) -> str:
+        """Set up an isolated virtual home directory for the terminal."""
+        # Create virtual home in user's local data directory
+        data_dir = Path.home() / ".local" / "share" / "terminal-fun"
+        virtual_home = data_dir / "virtual-home"
+
+        # Create the virtual home if it doesn't exist
+        virtual_home.mkdir(parents=True, exist_ok=True)
+
+        # Create realistic home directory structure
+        common_dirs = [
+            "Documents",
+            "Downloads",
+            "Pictures",
+            "Music",
+            "Videos",
+            "Desktop",
+            "workspace",
+            "projects"
+        ]
+
+        for dir_name in common_dirs:
+            (virtual_home / dir_name).mkdir(exist_ok=True)
+
+        # Create a welcome README in the home directory
+        readme_path = virtual_home / "README.txt"
+        if not readme_path.exists():
+            readme_content = """Welcome to Terminal Fun!
+
+This is your practice terminal environment. Everything you do here is isolated
+from your real home directory, so feel free to experiment!
+
+Try these commands to get started:
+  ls          - List files and directories
+  pwd         - Print working directory
+  cd Desktop  - Change to Desktop directory
+  mkdir test  - Create a new directory
+
+Happy learning!
+"""
+            readme_path.write_text(readme_content)
+
+        return str(virtual_home)
 
     def load_first_lesson(self):
         """Load the first available lesson."""
