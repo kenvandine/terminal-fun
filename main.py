@@ -659,6 +659,62 @@ set statusline=%F%m%r%h%w\\ [TYPE=%Y]\\ [POS=%l,%v][%p%%]
         vim_dir = virtual_home / ".vim" / "undodir"
         vim_dir.mkdir(parents=True, exist_ok=True)
 
+        # Create .gitconfig with sensible defaults
+        gitconfig_path = virtual_home / ".gitconfig"
+        if not gitconfig_path.exists():
+            gitconfig_content = """[user]
+\tname = Terminal Fun Student
+\temail = student@terminalfun.local
+
+[init]
+\tdefaultBranch = main
+
+[core]
+\teditor = vim
+\tautocrlf = input
+
+[color]
+\tui = auto
+\tbranch = auto
+\tdiff = auto
+\tstatus = auto
+
+[color "branch"]
+\tcurrent = yellow reverse
+\tlocal = yellow
+\tremote = green
+
+[color "diff"]
+\tmeta = yellow bold
+\tfrag = magenta bold
+\told = red bold
+\tnew = green bold
+
+[color "status"]
+\tadded = green
+\tchanged = yellow
+\tuntracked = red
+
+[alias]
+\tst = status
+\tco = checkout
+\tbr = branch
+\tci = commit
+\tlog1 = log --oneline --graph --decorate
+\tlast = log -1 HEAD
+\tunstage = reset HEAD --
+
+[pull]
+\trebase = false
+
+[push]
+\tdefault = simple
+
+[help]
+\tautocorrect = 1
+"""
+            gitconfig_path.write_text(gitconfig_content)
+
         return str(virtual_home)
 
     def load_first_lesson(self):
