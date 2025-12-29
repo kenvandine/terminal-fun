@@ -1,0 +1,114 @@
+name: terminal-fun
+base: core24
+version: git
+summary: Master the Linux command line through interactive lessons
+description: |
+  Terminal Fun is an interactive, graphical learning application that makes mastering
+  the Linux command line enjoyable and accessible. Whether you're a complete beginner
+  who's never opened a terminal or an experienced user looking to fill in knowledge
+  gaps, Terminal Fun provides a structured, hands-on learning experience.
+
+  **What You'll Learn**
+
+  Terminal Fun covers essential command-line skills through 21 comprehensive lessons
+  organized into 7 progressive categories:
+
+  • Introduction - Get comfortable with the terminal interface
+  • Shell Basics - Master environment variables, command history, and aliases
+  • Navigation - Learn to move efficiently through the filesystem
+  • File Operations - Create, modify, find, and manage files with confidence
+  • Pipes & Redirection - Compose powerful command pipelines
+  • Process Management - Monitor and control running programs
+  • System Administration - Use sudo, apt, and snap like a pro
+
+  **Interactive Learning Experience**
+
+  The app features a unique split-screen interface with lesson content on the left
+  and a live, embedded terminal on the right. As you read through clear explanations
+  and practical examples, you can immediately try commands in the integrated terminal.
+  Each lesson includes multiple hands-on exercises that build your muscle memory and
+  confidence.
+
+  Track your progress as you complete lessons - check marks appear next to finished
+  topics so you always know where you are in your learning journey. The lessons are
+  designed to build on each other, starting with absolute basics and progressing to
+  advanced topics like file permissions, process priority, and package management.
+
+  **Key Features**
+
+  • 21 comprehensive lessons covering fundamental to advanced topics
+  • Split-screen interface: lessons + live terminal side-by-side
+  • Hands-on exercises with practical, real-world examples
+  • Visual progress tracking with completion indicators
+  • Embedded VTE terminal for immediate practice
+  • Beautiful GNOME/Adwaita interface that feels native
+  • Self-paced learning - go at your own speed
+  • All content works offline - no internet required
+
+  **Who Is This For?**
+
+  • Beginners who want to learn the command line from scratch
+  • Linux users transitioning from GUI-only workflows
+  • Students learning system administration
+  • Developers who need stronger command-line skills
+  • Anyone who wants to understand what those terminal commands actually do
+
+  **Why Terminal Fun?**
+
+  Most command-line tutorials are either too dry (man pages) or too scattered (random
+  blog posts). Terminal Fun provides a structured, engaging curriculum with immediate
+  feedback. The integrated terminal means you're always one click away from trying
+  what you just learned. No context switching, no copy-pasting - just pure learning.
+
+  By the time you complete all lessons, you'll be comfortable navigating filesystems,
+  composing command pipelines, managing processes, and performing system administration
+  tasks. You'll understand not just how to use commands, but why they work the way they
+  do and when to use them.
+
+  Terminal Fun turns command-line anxiety into command-line confidence!
+
+grade: stable
+confinement: strict
+
+apps:
+  terminal-fun:
+    command: bin/terminal-fun
+    extensions: [gnome]
+    plugs:
+      - home
+    environment:
+      PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/lib/python3.12/site-packages
+      TERMINAL_FUN_LESSONS_DIR: $SNAP/lessons
+
+parts:
+  terminal-fun:
+    plugin: python
+    source: .
+    python-packages:
+      - PyYAML>=6.0
+    stage-packages:
+      - python3-gi
+      - python3-gi-cairo
+      - gir1.2-gtk-4.0
+      - gir1.2-adw-1
+      - gir1.2-vte-3.91
+      - gir1.2-pango-1.0
+      - libvte-2.91-0
+      - libvte-2.91-common
+    override-build: |
+      craftctl default
+
+      # Install the main application
+      mkdir -p $CRAFT_PART_INSTALL/bin
+      cp main.py $CRAFT_PART_INSTALL/bin/terminal-fun
+      cp lesson_loader.py $CRAFT_PART_INSTALL/bin/
+      cp progress_tracker.py $CRAFT_PART_INSTALL/bin/
+      chmod +x $CRAFT_PART_INSTALL/bin/terminal-fun
+
+      # Install lessons
+      mkdir -p $CRAFT_PART_INSTALL/lessons
+      cp -r lessons/* $CRAFT_PART_INSTALL/lessons/
+
+layout:
+  /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/girepository-1.0:
+    bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/girepository-1.0

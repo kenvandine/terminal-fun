@@ -23,3 +23,8 @@ ENV/
 .DS_Store
 Thumbs.db
 
+# Snap build artifacts
+*.snap
+parts/
+stage/
+prime/

@@ -762,7 +762,7 @@ class TerminalFunApp(Adw.Application):
     """Main application."""
 
     def __init__(self):
-        super().__init__(application_id="com.terminalfun.app")
+        super().__init__()
         self.connect("activate", self.on_activate)
 
     def on_activate(self, app):
