@@ -73,14 +73,14 @@ confinement: strict
 apps:
   terminal-fun:
     command: bin/terminal-fun
-    desktop: terminal-fun.desktop
+    desktop: meta/gui/terminal-fun.desktop
     extensions: [gnome]
     plugs:
       - home
-      - removable-media
     environment:
       PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/lib/python3.12/site-packages
       TERMINAL_FUN_LESSONS_DIR: $SNAP/lessons
+      PATH: $SNAP/usr/bin:$SNAP/bin:$PATH
 
 parts:
   terminal-fun:
@@ -116,6 +116,21 @@ parts:
       cp terminal-fun.desktop $CRAFT_PART_INSTALL/meta/gui/
       cp terminal-fun.png $CRAFT_PART_INSTALL/meta/gui/
 
+  tools:
+    plugin: nil
+    stage-packages:
+      - git
+      - vim-nox
+      - vim-runtime
+    organize:
+      usr/bin/vim.nox: usr/bin/vim
+
 layout:
   /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/girepository-1.0:
     bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/girepository-1.0
+  /usr/share/vim:
+    bind: $SNAP/usr/share/vim
+  /usr/lib/git-core:
+    bind: $SNAP/usr/lib/git-core
+  /usr/share/git-core:
+    bind: $SNAP/usr/share/git-core
