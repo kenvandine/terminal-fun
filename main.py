@@ -320,12 +320,6 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         self.index_button.connect("clicked", self.on_index_clicked)
         header.pack_start(self.index_button)
 
-        # Progress button (left side)
-        self.progress_button = Gtk.Button.new_from_icon_name("view-list-symbolic")
-        self.progress_button.set_tooltip_text("View Progress")
-        self.progress_button.connect("clicked", self.on_progress_clicked)
-        header.pack_start(self.progress_button)
-
         # Main box (paned for resizable split)
         main_paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         main_paned.set_shrink_start_child(False)
@@ -582,11 +576,6 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         print(f"DEBUG: Signal received - loading {category}/{lesson_slug}")
         dialog.close()
         self.load_lesson(category, lesson_slug)
- 
-    def on_progress_clicked(self, button):
-        """Show progress dialog."""
-        dialog = ProgressDialog(self)
-        dialog.present()
 
     def show_error(self, message: str):
         """Show an error dialog."""
@@ -729,29 +718,29 @@ class LessonIndexDialog(Adw.Window):
         box.set_margin_top(8)
         box.set_margin_bottom(8)
 
-        # Status indicator
-        status = self.progress_tracker.get_lesson_status(category, lesson['slug'])
-        if status == 'completed':
-            status_icon = "✓"
-            status_css = "success"
-        else:
-            status_icon = "○"
-            status_css = ""
-
-        icon_label = Gtk.Label(label=status_icon)
-        icon_label.set_size_request(30, -1)
-        if status_css:
-            icon_label.add_css_class(status_css)
-        box.append(icon_label)
-
         # Lesson info
         lesson_info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         lesson_info_box.set_hexpand(True)
 
+        # Title row with status indicator on the right
+        title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+
         title_label = Gtk.Label(label=lesson['title'])
         title_label.set_halign(Gtk.Align.START)
         title_label.add_css_class("heading")
-        lesson_info_box.append(title_label)
+        title_label.set_hexpand(True)
+        title_row.append(title_label)
+
+        # Status indicator (check mark on the right)
+        status = self.progress_tracker.get_lesson_status(category, lesson['slug'])
+        if status == 'completed':
+            status_icon = "✓"
+            icon_label = Gtk.Label(label=status_icon)
+            icon_label.add_css_class("success")
+            icon_label.set_halign(Gtk.Align.END)
+            title_row.append(icon_label)
+
+        lesson_info_box.append(title_row)
 
         if lesson.get('description'):
             desc_label = Gtk.Label(label=lesson['description'])
@@ -764,97 +753,9 @@ class LessonIndexDialog(Adw.Window):
 
         box.append(lesson_info_box)
 
-        # Arrow icon
-        arrow_icon = Gtk.Image.new_from_icon_name("go-next-symbolic")
-        arrow_icon.add_css_class("dim-label")
-        box.append(arrow_icon)
-
         row.set_child(box)
 
         return row
-
-
-class ProgressDialog(Adw.Window):
-    """Progress viewing dialog."""
-
-    def __init__(self, parent):
-        super().__init__(transient_for=parent, title="Progress", modal=True)
-        self.set_default_size(500, 600)
-        self.progress_tracker = ProgressTracker()
-
-        header = Adw.HeaderBar()
-        header.set_show_end_title_buttons(True)
-
-        # Main content box that expands
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        main_box.set_vexpand(True)
-        main_box.set_hexpand(True)
-
-        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        content.set_margin_start(20)
-        content.set_margin_end(20)
-        content.set_margin_top(20)
-        content.set_margin_bottom(20)
-        content.set_vexpand(True)
-        content.set_hexpand(True)
-
-        stats = self.progress_tracker.get_stats()
-
-        stats_label = Gtk.Label(label=f"Completed: {stats['completed']}\nNot Started: {stats['not_started']}")
-        stats_label.add_css_class("heading")
-        content.append(stats_label)
-
-        # Scrolled window that expands
-        scrolled = Gtk.ScrolledWindow()
-        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scrolled.set_vexpand(True)
-        scrolled.set_hexpand(True)
-        scrolled.set_propagate_natural_height(False)
-
-        list_box = Gtk.ListBox()
-        list_box.set_selection_mode(Gtk.SelectionMode.NONE)
-
-        progress = self.progress_tracker.get_all_progress()
-        if progress.get('lessons'):
-            for lesson_key, lesson_data in sorted(progress['lessons'].items()):
-                row = Gtk.ListBoxRow()
-                box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-                box.set_margin_start(12)
-                box.set_margin_end(12)
-                box.set_margin_top(8)
-                box.set_margin_bottom(8)
-
-                status = lesson_data.get('status', 'not_started')
-                status_icon = "✓" if status == "completed" else "○"
-                icon_label = Gtk.Label(label=status_icon)
-                icon_label.set_size_request(30, -1)
-                box.append(icon_label)
-
-                name_label = Gtk.Label(label=lesson_key)
-                name_label.set_halign(Gtk.Align.START)
-                name_label.set_hexpand(True)
-                box.append(name_label)
-
-                row.set_child(box)
-                list_box.append(row)
-        else:
-            empty_label = Gtk.Label(label="No progress yet. Start learning!")
-            empty_label.set_margin_top(20)
-            list_box.append(empty_label)
-
-        scrolled.set_child(list_box)
-        content.append(scrolled)
-
-        # Close button
-        close_button = Gtk.Button(label="Close")
-        close_button.add_css_class("suggested-action")
-        close_button.connect("clicked", lambda b: self.destroy())
-        content.append(close_button)
-
-        main_box.append(header)
-        main_box.append(content)
-
-        self.set_content(main_box)
 
 
 class TerminalFunApp(Adw.Application):
