@@ -16,7 +16,6 @@ Think of the terminal as a text-based interface to your computer. Instead of cli
 
 To open the terminal:
 - **Linux**: Press `Ctrl + Alt + T` or search for "Terminal" in your applications
-- **macOS**: Press `Cmd + Space` and type "Terminal"
 - **Windows**: Use WSL (Windows Subsystem for Linux) or Git Bash
 
 When you open the terminal, you'll see a prompt that usually looks something like:
