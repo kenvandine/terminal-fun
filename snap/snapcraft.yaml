@@ -10,16 +10,18 @@ description: |
 
   **What You'll Learn**
 
-  Terminal Fun covers essential command-line skills through 21 comprehensive lessons
-  organized into 7 progressive categories:
+  Terminal Fun covers essential command-line skills through 23 comprehensive lessons
+  organized into 9 progressive categories:
 
   • Introduction - Get comfortable with the terminal interface
   • Shell Basics - Master environment variables, command history, and aliases
   • Navigation - Learn to move efficiently through the filesystem
   • File Operations - Create, modify, find, and manage files with confidence
+  • Text Editors - Master Vim for powerful terminal-based text editing
   • Pipes & Redirection - Compose powerful command pipelines
   • Process Management - Monitor and control running programs
   • System Administration - Use sudo, apt, and snap like a pro
+  • Version Control - Learn Git from basics to advanced topics
 
   **Interactive Learning Experience**
 
@@ -29,19 +31,30 @@ description: |
   Each lesson includes multiple hands-on exercises that build your muscle memory and
   confidence.
 
-  Track your progress as you complete lessons - check marks appear next to finished
+  Track your progress as you complete lessons - checkmarks appear next to finished
   topics so you always know where you are in your learning journey. The lessons are
   designed to build on each other, starting with absolute basics and progressing to
-  advanced topics like file permissions, process priority, and package management.
+  advanced topics like file permissions, Vim text editing, process priority, package
+  management, and Git version control.
+
+  **Safe Learning Environment**
+
+  Terminal Fun creates an isolated virtual home directory where you can experiment
+  freely without affecting your real files. The environment comes pre-configured with
+  a professional .vimrc (syntax highlighting for 9+ languages) and .gitconfig (colors
+  and helpful aliases), giving you a production-quality setup from day one.
 
   **Key Features**
 
-  • 21 comprehensive lessons covering fundamental to advanced topics
+  • 23 comprehensive lessons covering fundamental to advanced topics
   • Split-screen interface: lessons + live terminal side-by-side
   • Hands-on exercises with practical, real-world examples
-  • Visual progress tracking with completion indicators
-  • Embedded VTE terminal for immediate practice
+  • Visual progress tracking with checkmark completion indicators
+  • Embedded VTE terminal with Ubuntu theme for immediate practice
+  • Isolated virtual environment for risk-free experimentation
+  • Pre-configured Vim and Git for professional workflows
   • Beautiful GNOME/Adwaita interface that feels native
+  • Keyboard shortcuts: Ctrl+Shift+C to copy, Ctrl+Shift+V to paste
   • Self-paced learning - go at your own speed
   • All content works offline - no internet required
 
@@ -61,9 +74,9 @@ description: |
   what you just learned. No context switching, no copy-pasting - just pure learning.
 
   By the time you complete all lessons, you'll be comfortable navigating filesystems,
-  composing command pipelines, managing processes, and performing system administration
-  tasks. You'll understand not just how to use commands, but why they work the way they
-  do and when to use them.
+  editing files with Vim, composing command pipelines, managing processes, performing
+  system administration tasks, and tracking code with Git. You'll understand not just
+  how to use commands, but why they work the way they do and when to use them.
 
   Terminal Fun turns command-line anxiety into command-line confidence!
 
