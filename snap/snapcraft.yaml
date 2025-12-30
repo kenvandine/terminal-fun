@@ -80,7 +80,12 @@ description: |
 
   Terminal Fun turns command-line anxiety into command-line confidence!
 
+title: Terminal Fun
 license: GPL-3.0
+contact: https://github.com/kenvandine/terminal-fun/issues
+issues: https://github.com/kenvandine/terminal-fun/issues
+source-code: https://github.com/kenvandine/terminal-fun
+
 grade: stable
 confinement: strict
 
