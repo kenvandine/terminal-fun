@@ -36,8 +36,28 @@ class LessonLoader:
                     self._lessons_cache[category][lesson_slug] = None  # Lazy load
     
     def get_categories(self) -> List[str]:
-        """Get all available categories."""
-        return sorted(self._lessons_cache.keys())
+        """Get all available categories in pedagogical order."""
+        # Define the natural learning progression for complete beginners
+        preferred_order = [
+            'intro',           # Getting started with the terminal
+            'shell-basics',    # Environment, history, aliases
+            'navigation',      # Moving around the filesystem
+            'files',           # Working with files
+            'text-editors',    # Editing files (vim)
+            'pipes-redirection',  # Composing commands
+            'processes',       # Managing running programs
+            'system-admin',    # System administration
+            'version-control'  # Git and source control
+        ]
+
+        # Get all available categories
+        available = set(self._lessons_cache.keys())
+
+        # Return in preferred order, followed by any categories not in the list
+        ordered = [cat for cat in preferred_order if cat in available]
+        remaining = sorted(available - set(ordered))
+
+        return ordered + remaining
     
     def get_category_display_name(self, category: str) -> str:
         """Get a human-readable name for a category."""
