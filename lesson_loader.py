@@ -3,6 +3,7 @@ Lesson loader for Terminal Fun.
 Loads lesson content from markdown files.
 """
 
+import os
 import yaml
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -10,8 +11,12 @@ from typing import Dict, List, Optional, Tuple
 
 class LessonLoader:
     """Loads and parses lesson content from markdown files."""
-    
-    def __init__(self, lessons_dir: str = "lessons"):
+
+    def __init__(self, lessons_dir: Optional[str] = None):
+        # Check environment variable first, then use provided dir, then fallback to "lessons"
+        if lessons_dir is None:
+            lessons_dir = os.environ.get('TERMINAL_FUN_LESSONS_DIR', 'lessons')
+
         self.lessons_dir = Path(lessons_dir)
         self._lessons_cache: Dict[str, Dict[str, Dict]] = {}
         self._load_all_lessons()
