@@ -6,12 +6,8 @@
       <stop offset="100%" style="stop-color:#241f31;stop-opacity:1" />
     </linearGradient>
     <linearGradient id="screenGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#1e1e2e;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#181825;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="highlightGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#62a0ea;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#99c1f1;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#300a24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e0a18;stop-opacity:1" />
     </linearGradient>
   </defs>
 
@@ -25,7 +21,7 @@
   <rect x="80" y="120" width="352" height="40" rx="16" fill="#3d3846"/>
   <rect x="80" y="144" width="352" height="16" fill="#3d3846"/>
 
-  <!-- Window control buttons -->
+  <!-- Window control buttons (Ubuntu style) -->
   <circle cx="108" cy="140" r="8" fill="#f66151"/>
   <circle cx="136" cy="140" r="8" fill="#ffc83d"/>
   <circle cx="164" cy="140" r="8" fill="#57e389"/>
@@ -40,26 +36,7 @@
   <text x="100" y="300" font-family="monospace" font-size="16" fill="#deddda">-rw-r--r-- README.md</text>
 
   <!-- Cursor blink -->
-  <rect x="232" y="182" width="12" height="24" fill="#99c1f1" opacity="0.9"/>
-
-  <!-- Fun element: Graduation cap overlay -->
-  <g transform="translate(340, 300)">
-    <!-- Cap board -->
-    <path d="M -50 0 L 50 0 L 40 10 L -40 10 Z" fill="#3584e4"/>
-    <!-- Cap top -->
-    <ellipse cx="0" cy="0" rx="50" ry="12" fill="#1c71d8"/>
-    <!-- Tassel -->
-    <rect x="35" y="-5" width="3" height="30" fill="#f9f06b"/>
-    <circle cx="36.5" cy="26" r="6" fill="#f9f06b"/>
-  </g>
-
-  <!-- Sparkle elements for "fun" -->
-  <g fill="#f9f06b" opacity="0.8">
-    <circle cx="120" cy="100" r="4"/>
-    <circle cx="380" cy="95" r="3"/>
-    <circle cx="410" cy="360" r="4"/>
-    <circle cx="100" cy="380" r="3"/>
-  </g>
+  <rect x="232" y="182" width="12" height="24" fill="#f37329" opacity="0.9"/>
 
   <!-- Subtle border -->
   <circle cx="256" cy="256" r="240" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.1"/>
