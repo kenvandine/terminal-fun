@@ -569,10 +569,10 @@ Happy learning!
         # Create a .vimrc with syntax highlighting enabled
         vimrc_path = virtual_home / ".vimrc"
         if not vimrc_path.exists():
-            vimrc_content = """\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"
-\" Terminal Fun Vim Configuration
-\" Optimized for learning with syntax highlighting enabled
-\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"
+            vimrc_content = r"""====================================================================
+" Terminal Fun Vim Configuration
+" Optimized for learning with syntax highlighting enabled
+====================================================================
 
 " Enable syntax highlighting
 syntax on
@@ -648,7 +648,7 @@ autocmd FileType json setlocal tabstop=2 shiftwidth=2 expandtab
 set visualbell          " Use visual bell instead of beeping
 
 " Status line (shows file type and position)
-set statusline=%F%m%r%h%w\\ [TYPE=%Y]\\ [POS=%l,%v][%p%%]
+set statusline=%F%m%r%h%w\ [TYPE=%Y]\ [POS=%l,%v][%p%%]
 
 " Welcome message for new users
 " Press 'i' to enter Insert mode, 'Esc' to return to Normal mode
