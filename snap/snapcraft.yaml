@@ -67,6 +67,7 @@ description: |
 
   Terminal Fun turns command-line anxiety into command-line confidence!
 
+license: GPL-3.0
 grade: stable
 confinement: strict
 
