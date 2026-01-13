@@ -1,0 +1,172 @@
+#!/bin/bash
+# Terminal Fun - Mock systemctl command
+# Simulates systemctl for learning environment
+
+# Source common library
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+source "${SCRIPT_DIR}/../lib/sandbox_common.sh"
+
+# Service database
+declare -A SERVICE_INFO
+SERVICE_INFO["snapd"]="snapd.service|Snap Daemon|running|enabled"
+SERVICE_INFO["ssh"]="ssh.service|OpenBSD Secure Shell server|running|enabled"
+SERVICE_INFO["sshd"]="ssh.service|OpenBSD Secure Shell server|running|enabled"
+SERVICE_INFO["nginx"]="nginx.service|A high performance web server|inactive|disabled"
+SERVICE_INFO["apache2"]="apache2.service|The Apache HTTP Server|inactive|disabled"
+SERVICE_INFO["docker"]="docker.service|Docker Application Container Engine|inactive|disabled"
+SERVICE_INFO["cron"]="cron.service|Regular background program processing daemon|running|enabled"
+SERVICE_INFO["ufw"]="ufw.service|Uncomplicated firewall|running|enabled"
+SERVICE_INFO["cups"]="cups.service|CUPS Scheduler|running|enabled"
+SERVICE_INFO["bluetooth"]="bluetooth.service|Bluetooth service|running|enabled"
+SERVICE_INFO["networkmanager"]="NetworkManager.service|Network Manager|running|enabled"
+SERVICE_INFO["gdm"]="gdm.service|GNOME Display Manager|running|enabled"
+
+get_service_info() {
+    local service="$1"
+    # Remove .service suffix if present
+    service="${service%.service}"
+    service="${service,,}"  # lowercase
+
+    if [ -n "${SERVICE_INFO[$service]}" ]; then
+        echo "${SERVICE_INFO[$service]}"
+    else
+        echo "${service}.service|${service} service|inactive|disabled"
+    fi
+}
+
+case "$1" in
+    status)
+        shift
+        service="$1"
+        if [ -z "$service" ]; then
+            echo "error: unit name not specified"
+            exit 1
+        fi
+
+        info=$(get_service_info "$service")
+        unit_name=$(echo "$info" | cut -d'|' -f1)
+        description=$(echo "$info" | cut -d'|' -f2)
+        status=$(echo "$info" | cut -d'|' -f3)
+        enabled=$(echo "$info" | cut -d'|' -f4)
+
+        if [ "$status" == "running" ]; then
+            active_status="active (running)"
+            active_color="${GREEN}"
+            since="since $(date '+%a %Y-%m-%d %H:%M:%S %Z'); 1h ago"
+            pid="Main PID: $((RANDOM % 10000 + 1000)) (${service%.service})"
+        else
+            active_status="inactive (dead)"
+            active_color="${RED}"
+            since=""
+            pid=""
+        fi
+
+        echo -e "● ${unit_name} - ${description}"
+        echo -e "     Loaded: loaded (/lib/systemd/system/${unit_name}; ${enabled}; preset: enabled)"
+        echo -e "     Active: ${active_color}${active_status}${NC} ${since}"
+        if [ -n "$pid" ]; then
+            echo "   ${pid}"
+            echo "      Tasks: $((RANDOM % 10 + 1)) (limit: 37802)"
+            echo "     Memory: $((RANDOM % 50 + 5)).$((RANDOM % 10))M"
+            echo "        CPU: $((RANDOM % 100))ms"
+            echo "     CGroup: /system.slice/${unit_name}"
+        fi
+        echo ""
+        current_time=$(date "+%b %d %H:%M:%S")
+        echo "${current_time} terminal-fun systemd[1]: Started ${description}."
+
+        exit 0
+        ;;
+
+    is-active)
+        shift
+        service="$1"
+        if [ -z "$service" ]; then
+            exit 1
+        fi
+
+        info=$(get_service_info "$service")
+        status=$(echo "$info" | cut -d'|' -f3)
+
+        if [ "$status" == "running" ]; then
+            echo "active"
+            exit 0
+        else
+            echo "inactive"
+            exit 3
+        fi
+        ;;
+
+    is-enabled)
+        shift
+        service="$1"
+        if [ -z "$service" ]; then
+            exit 1
+        fi
+
+        info=$(get_service_info "$service")
+        enabled=$(echo "$info" | cut -d'|' -f4)
+
+        echo "$enabled"
+        if [ "$enabled" == "enabled" ]; then
+            exit 0
+        else
+            exit 1
+        fi
+        ;;
+
+    list-units)
+        echo "  UNIT                              LOAD   ACTIVE SUB     DESCRIPTION"
+        echo "  cron.service                      loaded active running Regular background program processing daemon"
+        echo "  cups.service                      loaded active running CUPS Scheduler"
+        echo "  gdm.service                       loaded active running GNOME Display Manager"
+        echo "  NetworkManager.service            loaded active running Network Manager"
+        echo "  snapd.service                     loaded active running Snap Daemon"
+        echo "  ssh.service                       loaded active running OpenBSD Secure Shell server"
+        echo "  ufw.service                       loaded active running Uncomplicated firewall"
+        echo ""
+        echo "LOAD   = Reflects whether the unit definition was properly loaded."
+        echo "ACTIVE = The high-level unit activation state, i.e. generalization of SUB."
+        echo "SUB    = The low-level unit activation state, values depend on unit type."
+        echo ""
+        echo "7 loaded units listed."
+        exit 0
+        ;;
+
+    start|stop|restart|reload|enable|disable)
+        show_learning_message "systemctl $1" "Managing system services with 'systemctl $1' requires root privileges and is not available in this learning environment. You can use 'systemctl status' to view service information."
+        exit 1
+        ;;
+
+    daemon-reload|daemon-reexec)
+        show_learning_message "systemctl $1" "Reloading the systemd daemon is not available in this learning environment."
+        exit 1
+        ;;
+
+    -h|--help|help)
+        echo "systemctl - Control the systemd system and service manager"
+        echo ""
+        echo "Available commands in learning environment:"
+        echo "  status <service>  Show runtime status of a service"
+        echo "  is-active <srv>   Check if a service is active"
+        echo "  is-enabled <srv>  Check if a service is enabled"
+        echo "  list-units        List loaded units"
+        echo ""
+        echo "Service management commands (start, stop, restart, enable, disable)"
+        echo "are not available in this learning environment."
+        exit 0
+        ;;
+
+    *)
+        if [ -z "$1" ]; then
+            echo "systemctl - Control the systemd system and service manager"
+            echo ""
+            echo "Usage: systemctl [OPTIONS...] COMMAND ..."
+            echo ""
+            echo "Try 'systemctl --help' for available commands."
+        else
+            show_learning_message "systemctl $1" "This systemctl subcommand is not available in the learning environment. Try 'systemctl status <service>' to view service information."
+        fi
+        exit 1
+        ;;
+esac

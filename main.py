@@ -419,6 +419,11 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         env_dict["HOME"] = self.virtual_home
         env_dict["PWD"] = self.virtual_home
 
+        # Prepend sandbox bin to PATH for mock commands (sudo, apt, snap, systemctl)
+        if hasattr(self, 'sandbox_bin') and self.sandbox_bin:
+            current_path = env_dict.get("PATH", "/usr/bin:/bin")
+            env_dict["PATH"] = f"{self.sandbox_bin}:{current_path}"
+
         # Convert to list of "KEY=VALUE" strings for spawn_async
         envv = [f"{key}={value}" for key, value in env_dict.items()]
 
@@ -715,7 +720,55 @@ set statusline=%F%m%r%h%w\ [TYPE=%Y]\ [POS=%l,%v][%p%%]
 """
             gitconfig_path.write_text(gitconfig_content)
 
+        # Set up sandbox for mock commands
+        self._setup_sandbox(data_dir)
+
         return str(virtual_home)
+
+    def _setup_sandbox(self, data_dir: Path) -> None:
+        """Set up the sandbox with mock commands for privileged operations."""
+        import shutil
+
+        sandbox_dir = data_dir / "sandbox"
+        sandbox_bin = sandbox_dir / "bin"
+        sandbox_lib = sandbox_dir / "lib"
+        sandbox_state = sandbox_dir / "state"
+
+        # Create sandbox directories
+        sandbox_bin.mkdir(parents=True, exist_ok=True)
+        sandbox_lib.mkdir(parents=True, exist_ok=True)
+        sandbox_state.mkdir(parents=True, exist_ok=True)
+
+        # Find the source sandbox directory (in the app's installation)
+        # First, try relative to this script
+        script_dir = Path(__file__).parent
+        source_sandbox = script_dir / "sandbox"
+
+        # If running from snap, check snap location
+        if not source_sandbox.exists():
+            snap_dir = os.environ.get("SNAP")
+            if snap_dir:
+                source_sandbox = Path(snap_dir) / "sandbox"
+
+        if source_sandbox.exists():
+            # Copy sandbox scripts to user's sandbox directory
+            source_bin = source_sandbox / "bin"
+            source_lib = source_sandbox / "lib"
+
+            if source_bin.exists():
+                for script in source_bin.iterdir():
+                    dest = sandbox_bin / script.name
+                    shutil.copy2(script, dest)
+                    dest.chmod(0o755)
+
+            if source_lib.exists():
+                for lib_file in source_lib.iterdir():
+                    dest = sandbox_lib / lib_file.name
+                    shutil.copy2(lib_file, dest)
+                    dest.chmod(0o755)
+
+        # Store sandbox path for use in terminal setup
+        self.sandbox_bin = str(sandbox_bin)
 
     def load_first_lesson(self):
         """Load the first available lesson."""
