@@ -676,15 +676,10 @@ pwd() {{
 
 # Update prompt path before each command
 _update_prompt_pwd() {{
-    local real_pwd
-    real_pwd=$(builtin pwd)
-    if [[ "$real_pwd" == "$_REAL_HOME"* ]]; then
-        _PWD_DISPLAY="$_DISPLAY_HOME${{real_pwd#$_REAL_HOME}}"
-    else
-        _PWD_DISPLAY="$real_pwd"
-    fi
-    # Replace home with ~
-    _PWD_DISPLAY="${{_PWD_DISPLAY/$_DISPLAY_HOME/\\~}}"
+    local display_pwd
+    display_pwd=$(_translate_path "$(builtin pwd)")
+    # Set prompt display (with ~ for home)
+    _PWD_DISPLAY="${{display_pwd/$_DISPLAY_HOME/\\~}}"
 }}
 
 # Run before each prompt
