@@ -1,0 +1,195 @@
+#!/bin/bash
+# Terminal Fun - Mock sudo command
+# Simulates sudo behavior for learning environment
+
+# Source common library
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+source "${SCRIPT_DIR}/../lib/sandbox_common.sh"
+
+# Handle sudo options
+case "$1" in
+    -v|--validate)
+        # Simulate password validation
+        echo "[sudo] password for $(whoami): "
+        sleep 0.5
+        exit 0
+        ;;
+
+    -l|--list)
+        # Show simulated sudo privileges
+        echo "Matching Defaults entries for $(whoami) on terminal-fun:"
+        echo "    env_reset, mail_badpass,"
+        echo "    secure_path=/usr/local/sbin\\:/usr/local/bin\\:/usr/sbin\\:/usr/bin\\:/sbin\\:/bin\\:/snap/bin"
+        echo ""
+        echo "User $(whoami) may run the following commands on terminal-fun:"
+        echo "    (ALL : ALL) ALL"
+        exit 0
+        ;;
+
+    -k|--reset-timestamp)
+        # Simulate clearing password cache
+        exit 0
+        ;;
+
+    -i|--login)
+        show_learning_message "sudo -i" "The 'sudo -i' command opens a root shell. This is disabled in the learning environment for safety."
+        exit 1
+        ;;
+
+    -s|--shell)
+        show_learning_message "sudo -s" "The 'sudo -s' command opens a root shell. This is disabled in the learning environment for safety."
+        exit 1
+        ;;
+
+    -u|--user)
+        show_learning_message "sudo -u" "Running commands as another user is not available in this learning environment."
+        exit 1
+        ;;
+
+    -h|--help)
+        echo "sudo - execute a command as another user (Terminal Fun mock)"
+        echo ""
+        echo "Available in learning environment:"
+        echo "  sudo -v          Validate credentials"
+        echo "  sudo -l          List privileges"
+        echo "  sudo -k          Clear cached credentials"
+        echo "  sudo apt ...     Run apt commands"
+        echo "  sudo snap ...    Run snap commands"
+        echo "  sudo mkdir       Create directories"
+        echo "  sudo cat         Read files"
+        echo ""
+        echo "Other sudo operations are not available in this learning environment."
+        exit 0
+        ;;
+
+    "")
+        echo "usage: sudo -h | -K | -k | -V"
+        echo "usage: sudo -v [-ABkNnS] [-g group] [-h host] [-p prompt] [-u user]"
+        echo "usage: sudo -l [-ABkNnS] [-g group] [-h host] [-p prompt] [-U user] [-u user] [command [arg ...]]"
+        echo "usage: sudo [-ABbEHkNnPS] [-r role] [-t type] [-C num] [-D directory] [-g group] [-h host] [-p prompt]"
+        echo "            [-R directory] [-T timeout] [-u user] [VAR=value] [-i | -s] [command [arg ...]]"
+        echo "usage: sudo -e [-ABkNnS] [-r role] [-t type] [-C num] [-D directory] [-g group] [-h host] [-p prompt]"
+        echo "            [-R directory] [-T timeout] [-u user] file ..."
+        exit 1
+        ;;
+esac
+
+# Get the command after sudo
+cmd="$1"
+shift
+
+case "$cmd" in
+    apt|apt-get)
+        # Delegate to mock apt
+        exec "${SCRIPT_DIR}/apt" "$@"
+        ;;
+
+    snap)
+        # Delegate to mock snap
+        exec "${SCRIPT_DIR}/snap" "$@"
+        ;;
+
+    systemctl)
+        # Delegate to mock systemctl
+        exec "${SCRIPT_DIR}/systemctl" "$@"
+        ;;
+
+    mkdir)
+        # Allow mkdir in /tmp for exercises
+        target="${1:-}"
+        if [[ "$target" == /tmp/* ]]; then
+            echo "[sudo] simulating: mkdir $*"
+            # Actually create the directory in a safe location (virtual home)
+            safe_target="${HOME}/.sandbox_tmp/${target#/tmp/}"
+            mkdir -p "$safe_target" 2>/dev/null
+            echo "Directory created successfully (simulated)"
+            exit 0
+        else
+            show_learning_message "sudo mkdir" "Creating directories outside /tmp requires real root privileges. In this learning environment, you can practice with 'sudo mkdir /tmp/dirname'."
+            exit 1
+        fi
+        ;;
+
+    cat)
+        # Allow reading certain system files (simulated)
+        target="${1:-}"
+        case "$target" in
+            /etc/sudoers*)
+                # Show simulated sudoers content
+                echo "#"
+                echo "# This file MUST be edited with the 'visudo' command as root."
+                echo "#"
+                echo "# See the man page for details on how to write a sudoers file."
+                echo "#"
+                echo "Defaults\tenv_reset"
+                echo "Defaults\tmail_badpass"
+                echo "Defaults\tsecure_path=\"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin\""
+                echo ""
+                echo "# Host alias specification"
+                echo ""
+                echo "# User alias specification"
+                echo ""
+                echo "# Cmnd alias specification"
+                echo ""
+                echo "# User privilege specification"
+                echo "root\tALL=(ALL:ALL) ALL"
+                echo ""
+                echo "# Members of the admin group may gain root privileges"
+                echo "%admin ALL=(ALL) ALL"
+                echo ""
+                echo "# Members of the sudo group may gain root privileges"
+                echo "%sudo\tALL=(ALL:ALL) ALL"
+                exit 0
+                ;;
+            /var/log/syslog|/var/log/auth.log)
+                # Show simulated log content
+                current_time=$(date "+%b %d %H:%M:%S")
+                echo "${current_time} terminal-fun systemd[1]: Started Daily apt download activities."
+                echo "${current_time} terminal-fun systemd[1]: Starting Daily Cleanup of Temporary Directories..."
+                echo "${current_time} terminal-fun systemd[1]: Finished Daily Cleanup of Temporary Directories."
+                echo "${current_time} terminal-fun systemd[1]: Starting Message of the Day..."
+                echo "${current_time} terminal-fun systemd[1]: Finished Message of the Day."
+                exit 0
+                ;;
+            *)
+                show_learning_message "sudo cat $target" "Reading system files with sudo cat is limited in this learning environment. Try 'sudo cat /etc/sudoers' as shown in the exercise."
+                exit 1
+                ;;
+        esac
+        ;;
+
+    nano|vim|vi)
+        show_learning_message "sudo $cmd" "Editing system files with elevated privileges is not available in this learning environment. Practice with regular file editing in your home directory."
+        exit 1
+        ;;
+
+    rm)
+        show_learning_message "sudo rm" "The 'sudo rm' command can be very dangerous and is not available in this learning environment. This protects you from accidentally deleting important files!"
+        exit 1
+        ;;
+
+    chmod)
+        show_learning_message "sudo chmod" "Changing permissions with sudo is not available in this learning environment. Practice chmod without sudo on your own files."
+        exit 1
+        ;;
+
+    chown)
+        show_learning_message "sudo chown" "Changing file ownership requires real root privileges and is not available in this learning environment."
+        exit 1
+        ;;
+
+    su)
+        show_learning_message "sudo su" "Switching to root user is not available in this learning environment. Use 'sudo command' instead to run individual commands."
+        exit 1
+        ;;
+
+    reboot|shutdown|poweroff|halt)
+        show_learning_message "sudo $cmd" "System power commands are not available in this learning environment!"
+        exit 1
+        ;;
+
+    *)
+        show_learning_message "sudo $cmd" "This command is not available with sudo in the learning environment. Try the commands shown in the exercise instructions."
+        exit 1
+        ;;
+esac

@@ -1,0 +1,362 @@
+#!/bin/bash
+# Terminal Fun - Mock snap command
+# Simulates snap package management for learning environment
+
+# Source common library
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+source "${SCRIPT_DIR}/../lib/sandbox_common.sh"
+
+# Initialize state
+init_snap_state
+
+# Snap database for realistic info (versions for Ubuntu 25.10/26.04)
+declare -A SNAP_INFO
+SNAP_INFO["firefox"]="firefox|134.0.1|5892|Mozilla Firefox web browser"
+SNAP_INFO["vlc"]="vlc|3.0.21|3845|VLC media player"
+SNAP_INFO["spotify"]="spotify|1.2.52.912|125|Music for everyone"
+SNAP_INFO["code"]="code|1.96.2|198|Visual Studio Code"
+SNAP_INFO["gimp"]="gimp|2.10.38|512|GNU Image Manipulation Program"
+SNAP_INFO["inkscape"]="inkscape|1.4|10512|Vector Graphics Editor"
+SNAP_INFO["blender"]="blender|4.3.2|4892|3D creation suite"
+SNAP_INFO["postman"]="postman|11.22.0|298|API platform for building APIs"
+SNAP_INFO["slack"]="slack|4.42.112|215|Team communication tool"
+SNAP_INFO["discord"]="discord|0.0.75|298|Chat for communities and friends"
+SNAP_INFO["telegram-desktop"]="telegram-desktop|5.9.0|6825|Telegram Desktop messenger"
+SNAP_INFO["signal-desktop"]="signal-desktop|7.38.0|812|Private messenger"
+SNAP_INFO["chromium"]="chromium|131.0.6778.204|3125|Web browser"
+SNAP_INFO["obs-studio"]="obs-studio|31.0.0|2045|Recording and streaming"
+SNAP_INFO["thunderbird"]="thunderbird|128.6.0esr|612|Email, RSS and chat client"
+SNAP_INFO["libreoffice"]="libreoffice|24.8.4.2|345|Office productivity suite"
+SNAP_INFO["krita"]="krita|5.2.6|198|Digital painting application"
+SNAP_INFO["audacity"]="audacity|3.7.0|145|Audio editor and recorder"
+SNAP_INFO["kdenlive"]="kdenlive|24.12.0|412|Video editor"
+
+# Get snap info
+get_snap_info() {
+    local name="$1"
+    if [ -n "${SNAP_INFO[$name]}" ]; then
+        echo "${SNAP_INFO[$name]}"
+    else
+        echo "${name}|1.0|1|${name} snap"
+    fi
+}
+
+case "$1" in
+    find)
+        shift
+        term="$1"
+        if [ -z "$term" ]; then
+            echo "error: the required argument '<query>' was not provided"
+            exit 1
+        fi
+
+        echo "Name                          Version           Publisher          Notes    Summary"
+
+        found=0
+        for snap in "${!SNAP_INFO[@]}"; do
+            if [[ "$snap" == *"$term"* ]] || [[ "${SNAP_INFO[$snap]}" == *"$term"* ]]; then
+                info="${SNAP_INFO[$snap]}"
+                version=$(echo "$info" | cut -d'|' -f2)
+                desc=$(echo "$info" | cut -d'|' -f4)
+                # Format output like real snap find
+                printf "%-29s %-17s %-18s %-8s %s\n" "$snap" "$version" "publisher" "-" "$desc"
+                ((found++))
+            fi
+        done
+
+        # If nothing found, show generic results
+        if [ $found -eq 0 ]; then
+            printf "%-29s %-17s %-18s %-8s %s\n" "${term}-app" "1.0.0" "community" "-" "Application for ${term}"
+            printf "%-29s %-17s %-18s %-8s %s\n" "${term}-tool" "2.0.0" "developer" "-" "Tool for ${term}"
+        fi
+        exit 0
+        ;;
+
+    list)
+        shift
+        show_all=false
+        if [[ "$1" == "--all" ]]; then
+            show_all=true
+        fi
+
+        echo "Name                          Version                     Rev    Tracking         Publisher    Notes"
+
+        # Read from state file
+        while IFS=',' read -r name version rev tracking publisher notes; do
+            # Skip comments and empty lines
+            [[ "$name" =~ ^#.*$ ]] && continue
+            [ -z "$name" ] && continue
+
+            # Add checkmark for canonical publisher
+            if [ "$publisher" == "canonical" ]; then
+                publisher_display="canonical✓"
+            else
+                publisher_display="${publisher:-publisher}"
+            fi
+
+            printf "%-29s %-27s %-6s %-16s %-12s %s\n" "$name" "$version" "$rev" "$tracking" "$publisher_display" "$notes"
+        done < "${SNAP_STATE_FILE}"
+
+        exit 0
+        ;;
+
+    info)
+        shift
+        snap_name="$1"
+        if [ -z "$snap_name" ]; then
+            echo "error: the required argument '<snap>' was not provided"
+            exit 1
+        fi
+
+        if [ -n "${SNAP_INFO[$snap_name]}" ]; then
+            info="${SNAP_INFO[$snap_name]}"
+            version=$(echo "$info" | cut -d'|' -f2)
+            rev=$(echo "$info" | cut -d'|' -f3)
+            desc=$(echo "$info" | cut -d'|' -f4)
+        else
+            version="1.0"
+            rev="1"
+            desc="${snap_name} snap package"
+        fi
+
+        size=$((RANDOM % 200 + 50))
+
+        echo "name:      ${snap_name}"
+        echo "summary:   ${desc}"
+        echo "publisher: Snap Publisher"
+        echo "store-url: https://snapcraft.io/${snap_name}"
+        echo "contact:   https://github.com/${snap_name}"
+        echo "license:   unset"
+        echo "description: |"
+        echo "  ${desc}"
+        echo "  "
+        echo "  This is a simulated snap package in the Terminal Fun learning environment."
+        echo "snap-id:   $(echo "${snap_name}" | md5sum | cut -c1-22 | tr '[:lower:]' '[:upper:]')"
+
+        # Check if installed
+        if is_snap_installed "$snap_name"; then
+            echo "tracking:  latest/stable"
+            echo "refresh-date: today at 12:00 UTC"
+            echo "channels:"
+            echo "  latest/stable:    ${version}  $(date +%Y-%m-%d) (${rev}) ${size}MB -"
+            echo "  latest/candidate: ${version}  $(date +%Y-%m-%d) (${rev}) ${size}MB -"
+            echo "  latest/beta:      ${version}  $(date +%Y-%m-%d) (${rev}) ${size}MB -"
+            echo "  latest/edge:      ${version}  $(date +%Y-%m-%d) (${rev}) ${size}MB -"
+            echo "installed:         ${version}             (${rev}) ${size}MB -"
+        else
+            echo "channels:"
+            echo "  latest/stable:    ${version}  $(date +%Y-%m-%d) (${rev}) ${size}MB -"
+            echo "  latest/candidate: ${version}  $(date +%Y-%m-%d) (${rev}) ${size}MB -"
+            echo "  latest/beta:      ${version}  $(date +%Y-%m-%d) (${rev}) ${size}MB -"
+            echo "  latest/edge:      ${version}  $(date +%Y-%m-%d) (${rev}) ${size}MB -"
+        fi
+
+        exit 0
+        ;;
+
+    install)
+        shift
+        # Parse options
+        classic=false
+        channel="latest/stable"
+        snap_name=""
+
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --classic)
+                    classic=true
+                    shift
+                    ;;
+                --channel=*)
+                    channel="${1#--channel=}"
+                    shift
+                    ;;
+                -*)
+                    shift
+                    ;;
+                *)
+                    snap_name="$1"
+                    shift
+                    ;;
+            esac
+        done
+
+        if [ -z "$snap_name" ]; then
+            echo "error: the required argument '<snap>...' was not provided"
+            exit 1
+        fi
+
+        if is_snap_installed "$snap_name"; then
+            echo "snap \"${snap_name}\" is already installed"
+            exit 0
+        fi
+
+        if [ -n "${SNAP_INFO[$snap_name]}" ]; then
+            info="${SNAP_INFO[$snap_name]}"
+            version=$(echo "$info" | cut -d'|' -f2)
+            rev=$(echo "$info" | cut -d'|' -f3)
+        else
+            version="1.0"
+            rev="1"
+        fi
+
+        size=$((RANDOM % 150 + 30))
+
+        echo "${snap_name} (${channel}) ${version} from Snap Publisher installed"
+        sleep 0.3
+
+        # Add to state
+        add_snap "$snap_name" "$version" "$rev"
+
+        exit 0
+        ;;
+
+    remove)
+        shift
+        purge=false
+        snap_name=""
+
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --purge)
+                    purge=true
+                    shift
+                    ;;
+                -*)
+                    shift
+                    ;;
+                *)
+                    snap_name="$1"
+                    shift
+                    ;;
+            esac
+        done
+
+        if [ -z "$snap_name" ]; then
+            echo "error: the required argument '<snap>...' was not provided"
+            exit 1
+        fi
+
+        if ! is_snap_installed "$snap_name"; then
+            echo "error: snap \"${snap_name}\" is not installed"
+            exit 1
+        fi
+
+        # Check for base snaps that shouldn't be removed
+        case "$snap_name" in
+            bare|core*|snapd|gnome-*|gtk-common-themes)
+                echo "error: cannot remove \"${snap_name}\": snap is used by the system"
+                exit 1
+                ;;
+        esac
+
+        echo "${snap_name} removed"
+        remove_snap "$snap_name"
+
+        exit 0
+        ;;
+
+    refresh)
+        shift
+        case "$1" in
+            --list)
+                echo "All snaps up to date."
+                exit 0
+                ;;
+            "")
+                echo "All snaps up to date."
+                exit 0
+                ;;
+            *)
+                snap_name="$1"
+                if is_snap_installed "$snap_name"; then
+                    echo "snap \"${snap_name}\" has no updates available"
+                else
+                    echo "error: snap \"${snap_name}\" is not installed"
+                    exit 1
+                fi
+                exit 0
+                ;;
+        esac
+        ;;
+
+    changes)
+        echo "ID   Status  Spawn               Ready               Summary"
+        current_time=$(date "+%Y-%m-%d")
+        echo "1    Done    today at 10:00 UTC  today at 10:00 UTC  Initialize system state"
+        echo "2    Done    today at 10:01 UTC  today at 10:01 UTC  Initialize device"
+        exit 0
+        ;;
+
+    services)
+        echo "Service  Startup  Current   Notes"
+        echo "(no services)"
+        exit 0
+        ;;
+
+    logs)
+        shift
+        snap_name="$1"
+        if [ -z "$snap_name" ]; then
+            echo "error: the required argument '<snap>' was not provided"
+            exit 1
+        fi
+        echo "-- Logs begin at $(date '+%a %Y-%m-%d %H:%M:%S UTC'), end at $(date '+%a %Y-%m-%d %H:%M:%S UTC'). --"
+        echo "$(date '+%b %d %H:%M:%S') terminal-fun ${snap_name}[12345]: Started"
+        exit 0
+        ;;
+
+    version)
+        echo "snap    2.67"
+        echo "snapd   2.67"
+        echo "series  16"
+        echo "ubuntu  25.10"
+        echo "kernel  6.14.0-12-generic"
+        exit 0
+        ;;
+
+    -h|--help|help)
+        echo "The snap command lets you install, configure, refresh and remove snaps."
+        echo ""
+        echo "Available commands in learning environment:"
+        echo "  find       Search for snaps"
+        echo "  info       Show snap details"
+        echo "  install    Install a snap"
+        echo "  list       List installed snaps"
+        echo "  refresh    Refresh snaps"
+        echo "  remove     Remove a snap"
+        echo "  changes    List recent changes"
+        echo "  version    Show version information"
+        echo ""
+        echo "For more information, see 'snap help <command>'."
+        exit 0
+        ;;
+
+    connect|disconnect|connections)
+        show_learning_message "snap $1" "Managing snap interfaces (connect/disconnect) is not available in this learning environment."
+        exit 1
+        ;;
+
+    set|get|unset)
+        show_learning_message "snap $1" "Snap configuration commands are not available in this learning environment."
+        exit 1
+        ;;
+
+    revert|switch|disable|enable)
+        show_learning_message "snap $1" "This snap management command is not available in the learning environment."
+        exit 1
+        ;;
+
+    *)
+        if [ -z "$1" ]; then
+            echo "The snap command lets you install, configure, refresh and remove snaps."
+            echo ""
+            echo "Usage: snap <command> [<options>...]"
+            echo ""
+            echo "Try 'snap help' for available commands."
+        else
+            show_learning_message "snap $1" "This snap subcommand is not available in the learning environment. Try 'snap help' to see available commands."
+        fi
+        exit 1
+        ;;
+esac

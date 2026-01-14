@@ -411,13 +411,91 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         self.terminal.add_controller(key_controller)
 
         # Spawn shell with isolated environment
-        shell = os.environ.get("SHELL", "/bin/bash")
+        # Try to use bubblewrap for namespace isolation (makes virtual home appear as /home/username)
+        # Fall back to direct bash if bwrap is not available
+        username = os.environ.get("USER", "learner")
+        bwrap_bin = self._find_bwrap()
 
-        # Create custom environment for the virtual home
-        # Start with current environment and override HOME
-        env_dict = dict(os.environ)
-        env_dict["HOME"] = self.virtual_home
-        env_dict["PWD"] = self.virtual_home
+        if bwrap_bin:
+            # Use bubblewrap for clean namespace isolation
+            fake_home = f"/home/{username}"
+
+            # Build the bwrap command with namespace isolation
+            # Note: --unshare-user is not used because snap confinement blocks
+            # access to /proc/sys/kernel/overflowuid required for user namespaces
+            argv = [
+                bwrap_bin,
+                "--unshare-pid",         # Create new PID namespace
+                "--unshare-uts",         # Create new UTS namespace (hostname)
+            ]
+
+            # Bind system directories read-only
+            system_dirs = ["/usr", "/bin", "/sbin", "/lib", "/lib64", "/etc"]
+            for sdir in system_dirs:
+                if os.path.exists(sdir):
+                    argv.extend(["--ro-bind", sdir, sdir])
+
+            # Bind /proc and /dev
+            argv.extend(["--proc", "/proc"])
+            argv.extend(["--dev", "/dev"])
+
+            # Create tmpfs for /tmp
+            argv.extend(["--tmpfs", "/tmp"])
+
+            # Bind virtual home to fake home path
+            argv.extend(["--bind", self.virtual_home, fake_home])
+
+            # Create /home directory structure
+            argv.extend(["--dir", "/home"])
+
+            # Bind sandbox bin to /opt/sandbox/bin for mock commands
+            if hasattr(self, 'sandbox_bin') and self.sandbox_bin:
+                argv.extend(["--dir", "/opt"])
+                argv.extend(["--dir", "/opt/sandbox"])
+                argv.extend(["--ro-bind", self.sandbox_bin, "/opt/sandbox/bin"])
+
+            # Set environment variables inside the sandbox
+            argv.extend(["--setenv", "HOME", fake_home])
+            argv.extend(["--setenv", "USER", username])
+            argv.extend(["--setenv", "SHELL", "/bin/bash"])
+            argv.extend(["--setenv", "TERM", os.environ.get("TERM", "xterm-256color")])
+
+            # Build PATH with sandbox bin first
+            if hasattr(self, 'sandbox_bin') and self.sandbox_bin:
+                sandbox_path = "/opt/sandbox/bin:/usr/local/bin:/usr/bin:/bin"
+            else:
+                sandbox_path = "/usr/local/bin:/usr/bin:/bin"
+            argv.extend(["--setenv", "PATH", sandbox_path])
+
+            # Set working directory and run bash
+            argv.extend(["--chdir", fake_home])
+            argv.extend(["/bin/bash", "--rcfile", f"{fake_home}/.bashrc"])
+
+            # Create environment for bwrap (minimal, most is set via --setenv)
+            env_dict = {
+                "TERM": os.environ.get("TERM", "xterm-256color"),
+            }
+
+            # Store fake_home for bashrc generation
+            self.fake_home = fake_home
+            working_directory = None  # bwrap handles this with --chdir
+        else:
+            # Fallback: direct bash without bwrap (paths will show real snap paths)
+            shell = os.environ.get("SHELL", "/bin/bash")
+            argv = [shell]
+
+            # Create custom environment for the virtual home
+            env_dict = dict(os.environ)
+            env_dict["HOME"] = self.virtual_home
+            env_dict["PWD"] = self.virtual_home
+
+            # Prepend sandbox bin to PATH for mock commands
+            if hasattr(self, 'sandbox_bin') and self.sandbox_bin:
+                current_path = env_dict.get("PATH", "/usr/bin:/bin")
+                env_dict["PATH"] = f"{self.sandbox_bin}:{current_path}"
+
+            self.fake_home = None
+            working_directory = self.virtual_home
 
         # Convert to list of "KEY=VALUE" strings for spawn_async
         envv = [f"{key}={value}" for key, value in env_dict.items()]
@@ -429,9 +507,9 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         # Callback signature: callback(source_object, result, user_data)
         self.terminal.spawn_async(
             Vte.PtyFlags.DEFAULT,  # pty_flags
-            self.virtual_home,     # working_directory (start in virtual home)
-            [shell],               # argv
-            envv,                  # envv (custom environment with virtual HOME)
+            working_directory,     # working_directory (None when using bwrap, virtual_home otherwise)
+            argv,                  # argv (bwrap command or shell)
+            envv,                  # envv (custom environment)
             GLib.SpawnFlags.DEFAULT,  # spawn_flags
             None,                  # child_setup
             None,                  # child_setup_data
@@ -565,6 +643,68 @@ Try these commands to get started:
 Happy learning!
 """
             readme_path.write_text(readme_content)
+
+        # Create .bashrc for realistic path display
+        bashrc_path = virtual_home / ".bashrc"
+        # Get the real username for display
+        real_user = os.environ.get("USER", "learner")
+        bashrc_content = f'''# Terminal Fun - Custom bash configuration
+# Makes the virtual home appear as /home/{real_user}
+
+# The real virtual home path (for internal use) - use canonical path
+export _REAL_HOME="$(cd "$HOME" && builtin pwd)"
+# The display home path (what users see)
+export _DISPLAY_HOME="/home/{real_user}"
+
+# Function to translate real paths to display paths
+_translate_path() {{
+    local path="$1"
+    # Handle both exact match and subdirectories
+    if [[ "$path" == "$_REAL_HOME"* ]]; then
+        echo "$_DISPLAY_HOME${{path#$_REAL_HOME}}"
+    else
+        echo "$path"
+    fi
+}}
+
+# Custom pwd that shows the translated path
+pwd() {{
+    local real_pwd
+    real_pwd=$(builtin pwd "$@")
+    _translate_path "$real_pwd"
+}}
+
+# Update prompt path before each command
+_update_prompt_pwd() {{
+    local display_pwd
+    display_pwd=$(_translate_path "$(builtin pwd)")
+    # Set prompt display (with ~ for home)
+    _PWD_DISPLAY="${{display_pwd/$_DISPLAY_HOME/\\~}}"
+}}
+
+# Run before each prompt
+PROMPT_COMMAND=_update_prompt_pwd
+
+# Set up the prompt - Ubuntu style (uses $_PWD_DISPLAY set by PROMPT_COMMAND)
+PS1='\\[\\033[01;32m\\]{real_user}@ubuntu\\[\\033[00m\\]:\\[\\033[01;34m\\]$_PWD_DISPLAY\\[\\033[00m\\]\\$ '
+
+# Color support for ls
+alias ls=\'ls --color=auto\'
+alias ll=\'ls -alF\'
+alias la=\'ls -A\'
+alias l=\'ls -CF\'
+
+# Color support for grep
+alias grep=\'grep --color=auto\'
+alias fgrep=\'fgrep --color=auto\'
+alias egrep=\'egrep --color=auto\'
+
+# Welcome message
+echo "Welcome to Terminal Fun!"
+echo "Your practice environment is ready at $_DISPLAY_HOME"
+echo ""
+'''
+        bashrc_path.write_text(bashrc_content)
 
         # Create a .vimrc with syntax highlighting enabled
         vimrc_path = virtual_home / ".vimrc"
@@ -715,7 +855,98 @@ set statusline=%F%m%r%h%w\ [TYPE=%Y]\ [POS=%l,%v][%p%%]
 """
             gitconfig_path.write_text(gitconfig_content)
 
+        # Set up sandbox for mock commands
+        self._setup_sandbox(data_dir)
+
         return str(virtual_home)
+
+    def _find_bwrap(self) -> str | None:
+        """Find the bubblewrap (bwrap) binary, checking snap location first.
+
+        Returns the path to bwrap if found and functional, or None if not available
+        or if it cannot create user namespaces (e.g., blocked by snap confinement).
+        """
+        import shutil
+        import subprocess
+
+        bwrap_path = None
+
+        # Check if running in snap
+        snap_dir = os.environ.get("SNAP")
+        if snap_dir:
+            snap_bwrap = Path(snap_dir) / "usr" / "bin" / "bwrap"
+            if snap_bwrap.exists():
+                bwrap_path = str(snap_bwrap)
+
+        # Fall back to system bwrap
+        if not bwrap_path:
+            system_bwrap = shutil.which("bwrap")
+            if system_bwrap:
+                bwrap_path = system_bwrap
+
+        if not bwrap_path:
+            return None
+
+        # Test if bwrap can actually run with PID namespace isolation
+        # This may fail in snap confinement even if the binary exists
+        try:
+            result = subprocess.run(
+                [bwrap_path, "--unshare-pid", "--", "/bin/true"],
+                capture_output=True,
+                timeout=5
+            )
+            if result.returncode == 0:
+                return bwrap_path
+            # bwrap exists but can't create namespaces
+            return None
+        except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError):
+            # bwrap failed to run properly
+            return None
+
+    def _setup_sandbox(self, data_dir: Path) -> None:
+        """Set up the sandbox with mock commands for privileged operations."""
+        import shutil
+
+        sandbox_dir = data_dir / "sandbox"
+        sandbox_bin = sandbox_dir / "bin"
+        sandbox_lib = sandbox_dir / "lib"
+        sandbox_state = sandbox_dir / "state"
+
+        # Create sandbox directories
+        sandbox_bin.mkdir(parents=True, exist_ok=True)
+        sandbox_lib.mkdir(parents=True, exist_ok=True)
+        sandbox_state.mkdir(parents=True, exist_ok=True)
+
+        # Find the source sandbox directory (in the app's installation)
+        # First, try relative to this script
+        script_dir = Path(__file__).parent
+        source_sandbox = script_dir / "sandbox"
+
+        # If running from snap, check snap location
+        if not source_sandbox.exists():
+            snap_dir = os.environ.get("SNAP")
+            if snap_dir:
+                source_sandbox = Path(snap_dir) / "sandbox"
+
+        if source_sandbox.exists():
+            # Copy sandbox scripts to user's sandbox directory
+            source_bin = source_sandbox / "bin"
+            source_lib = source_sandbox / "lib"
+
+            if source_bin.exists():
+                for script in source_bin.iterdir():
+                    dest = sandbox_bin / script.name
+                    shutil.copy2(script, dest)
+                    dest.chmod(0o755)
+
+            if source_lib.exists():
+                for lib_file in source_lib.iterdir():
+                    dest = sandbox_lib / lib_file.name
+                    shutil.copy2(lib_file, dest)
+                    dest.chmod(0o755)
+
+        # Store sandbox path for use in terminal setup
+        self.sandbox_bin = str(sandbox_bin)
 
     def load_first_lesson(self):
         """Load the first available lesson."""

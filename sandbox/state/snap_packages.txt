@@ -1,0 +1,7 @@
+# Format: name,version,rev,tracking,publisher,notes
+bare,1.0,5,latest/stable,canonical,base
+core24,20241210,562,latest/stable,canonical,base
+gnome-46-2404,0+git.89a8e32,98,latest/stable,canonical,-
+gtk-common-themes,0.1-81-g442e511,1548,latest/stable,canonical,-
+snapd,2.67,22458,latest/stable,canonical,snapd
+firefox,134.0.1,5892,latest/stable,publisher,-

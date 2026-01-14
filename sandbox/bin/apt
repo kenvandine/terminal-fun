@@ -1,0 +1,448 @@
+#!/bin/bash
+# Terminal Fun - Mock apt command
+# Simulates apt package management for learning environment
+
+# Source common library
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+source "${SCRIPT_DIR}/../lib/sandbox_common.sh"
+
+# Initialize state
+init_apt_state
+
+# Ubuntu release info - targeting 25.10/26.04
+UBUNTU_CODENAME="questing"
+UBUNTU_VERSION="25.10"
+
+# Package database for realistic info (versions matching Ubuntu 25.10/26.04)
+declare -A PACKAGE_INFO
+PACKAGE_INFO["curl"]="curl|8.11.0-1ubuntu1|245|curl is a command line tool for transferring data with URL syntax"
+PACKAGE_INFO["wget"]="wget|1.25-1ubuntu1|398|retrieves files from the web"
+PACKAGE_INFO["htop"]="htop|3.4.0-1|195|interactive process viewer"
+PACKAGE_INFO["tree"]="tree|2.2.1-1|58|displays an indented directory tree"
+PACKAGE_INFO["git"]="git|1:2.47.0-1ubuntu1|4892|fast, scalable, distributed revision control system"
+PACKAGE_INFO["vim"]="vim|2:9.1.0800-1ubuntu1|2156|Vi IMproved - enhanced vi editor"
+PACKAGE_INFO["nano"]="nano|8.2-1|312|small, friendly text editor"
+PACKAGE_INFO["neofetch"]="neofetch|7.1.0-5|98|Shows system info with distribution logo"
+PACKAGE_INFO["fastfetch"]="fastfetch|2.30.1-1|156|fast system information tool"
+PACKAGE_INFO["tmux"]="tmux|3.5a-1|478|terminal multiplexer"
+PACKAGE_INFO["screen"]="screen|5.0.0-1|725|terminal multiplexer with VT100/ANSI terminal emulation"
+PACKAGE_INFO["rsync"]="rsync|3.3.0-1|445|fast, versatile, remote (and local) file-copying tool"
+PACKAGE_INFO["jq"]="jq|1.7.1-4|92|lightweight and flexible command-line JSON processor"
+PACKAGE_INFO["zip"]="zip|3.0-14|195|Archiver for .zip files"
+PACKAGE_INFO["unzip"]="unzip|6.0-29ubuntu1|182|De-archiver for .zip files"
+PACKAGE_INFO["netcat"]="netcat-openbsd|1.228-1|48|TCP/IP swiss army knife"
+PACKAGE_INFO["nmap"]="nmap|7.95-1|5428|The Network Mapper"
+PACKAGE_INFO["python3"]="python3|3.13.1-1ubuntu1|52|interactive high-level object-oriented language"
+PACKAGE_INFO["nodejs"]="nodejs|22.11.0+dfsg-1ubuntu1|912|evented I/O for V8 javascript - runtime executable"
+PACKAGE_INFO["nginx"]="nginx|1.27.2-1ubuntu1|625|small, powerful, scalable web/proxy server"
+PACKAGE_INFO["apache2"]="apache2|2.4.62-1ubuntu1|598|Apache HTTP Server"
+PACKAGE_INFO["docker.io"]="docker.io|27.3.1-1ubuntu1|52480|Linux container runtime"
+PACKAGE_INFO["build-essential"]="build-essential|12.10ubuntu2|8|Informational list of build-essential packages"
+PACKAGE_INFO["gcc"]="gcc|4:14.2.0-1ubuntu1|5|GNU C compiler"
+PACKAGE_INFO["g++"]="g++|4:14.2.0-1ubuntu1|5|GNU C++ compiler"
+PACKAGE_INFO["make"]="make|4.4.1-1|235|utility for directing compilation"
+PACKAGE_INFO["cmake"]="cmake|3.31.2-1|8956|cross-platform make"
+
+# Get package info or generate fake one
+get_package_info() {
+    local pkg="$1"
+    if [ -n "${PACKAGE_INFO[$pkg]}" ]; then
+        echo "${PACKAGE_INFO[$pkg]}"
+    else
+        # Generate fake info for unknown packages
+        local fake_size=$((RANDOM % 500 + 50))
+        echo "${pkg}|1.0.0-1|${fake_size}|${pkg} package"
+    fi
+}
+
+case "$1" in
+    update)
+        echo "Hit:1 http://archive.ubuntu.com/ubuntu ${UBUNTU_CODENAME} InRelease"
+        sleep 0.1
+        echo "Hit:2 http://archive.ubuntu.com/ubuntu ${UBUNTU_CODENAME}-updates InRelease"
+        sleep 0.1
+        echo "Hit:3 http://archive.ubuntu.com/ubuntu ${UBUNTU_CODENAME}-backports InRelease"
+        sleep 0.1
+        echo "Hit:4 http://security.ubuntu.com/ubuntu ${UBUNTU_CODENAME}-security InRelease"
+        sleep 0.2
+        echo "Reading package lists... Done"
+        echo "Building dependency tree... Done"
+        echo "Reading state information... Done"
+        upgradeable=$((RANDOM % 5))
+        if [ $upgradeable -gt 0 ]; then
+            echo "$upgradeable packages can be upgraded. Run 'apt list --upgradeable' to see them."
+        else
+            echo "All packages are up to date."
+        fi
+        exit 0
+        ;;
+
+    upgrade)
+        echo "Reading package lists... Done"
+        echo "Building dependency tree... Done"
+        echo "Calculating upgrade... Done"
+        upgradeable=$((RANDOM % 3))
+        if [ $upgradeable -gt 0 ]; then
+            echo "The following packages will be upgraded:"
+            echo "  libsystemd0 libudev1"
+            echo "$upgradeable upgraded, 0 newly installed, 0 to remove and 0 not upgraded."
+            if [[ "$*" != *"-y"* ]]; then
+                echo "Do you want to continue? [Y/n] "
+                read -r response
+                if [[ ! "$response" =~ ^[Yy]?$ ]]; then
+                    echo "Abort."
+                    exit 1
+                fi
+            fi
+            sleep 0.3
+            echo "Get:1 http://archive.ubuntu.com/ubuntu ${UBUNTU_CODENAME}-updates/main amd64 libsystemd0 amd64 255.4-1ubuntu8.4 [431 kB]"
+            sleep 0.2
+            echo "Fetched 431 kB in 0s (1,234 kB/s)"
+            sleep 0.1
+            echo "Preparing to unpack .../libsystemd0_255.4-1ubuntu8.4_amd64.deb ..."
+            echo "Unpacking libsystemd0:amd64 (255.4-1ubuntu8.4) ..."
+            echo "Setting up libsystemd0:amd64 (255.4-1ubuntu8.4) ..."
+        else
+            echo "0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded."
+        fi
+        exit 0
+        ;;
+
+    install)
+        shift
+        # Remove any flags like -y
+        packages=()
+        for arg in "$@"; do
+            if [[ "$arg" != -* ]]; then
+                packages+=("$arg")
+            fi
+        done
+
+        if [ ${#packages[@]} -eq 0 ]; then
+            echo "E: Unable to locate package"
+            exit 1
+        fi
+
+        echo "Reading package lists... Done"
+        echo "Building dependency tree... Done"
+        echo "Reading state information... Done"
+
+        already_installed=()
+        to_install=()
+
+        for pkg in "${packages[@]}"; do
+            if is_apt_package_installed "$pkg"; then
+                already_installed+=("$pkg")
+            else
+                to_install+=("$pkg")
+            fi
+        done
+
+        if [ ${#already_installed[@]} -gt 0 ]; then
+            for pkg in "${already_installed[@]}"; do
+                echo "${pkg} is already the newest version ($(get_package_info "$pkg" | cut -d'|' -f2))."
+            done
+        fi
+
+        if [ ${#to_install[@]} -eq 0 ]; then
+            echo "0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded."
+            exit 0
+        fi
+
+        echo "The following NEW packages will be installed:"
+        echo "  ${to_install[*]}"
+
+        total_size=0
+        for pkg in "${to_install[@]}"; do
+            info=$(get_package_info "$pkg")
+            size=$(echo "$info" | cut -d'|' -f3)
+            total_size=$((total_size + size))
+        done
+
+        echo "${#to_install[@]} upgraded, ${#to_install[@]} newly installed, 0 to remove and 0 not upgraded."
+        echo "Need to get ${total_size} kB of archives."
+        echo "After this operation, $((total_size * 3)) kB of additional disk space will be used."
+
+        if [[ "$*" != *"-y"* ]]; then
+            echo -n "Do you want to continue? [Y/n] "
+            read -r response
+            if [[ ! "$response" =~ ^[Yy]?$ ]]; then
+                echo "Abort."
+                exit 1
+            fi
+        fi
+
+        counter=1
+        for pkg in "${to_install[@]}"; do
+            info=$(get_package_info "$pkg")
+            version=$(echo "$info" | cut -d'|' -f2)
+            size=$(echo "$info" | cut -d'|' -f3)
+            echo "Get:${counter} http://archive.ubuntu.com/ubuntu ${UBUNTU_CODENAME}/main amd64 ${pkg} amd64 ${version} [${size} kB]"
+            sleep 0.1
+            ((counter++))
+        done
+
+        echo "Fetched ${total_size} kB in 0s ($((total_size * 10)) kB/s)"
+
+        for pkg in "${to_install[@]}"; do
+            info=$(get_package_info "$pkg")
+            version=$(echo "$info" | cut -d'|' -f2)
+            echo "Selecting previously unselected package ${pkg}."
+            sleep 0.05
+            db_count=$((RANDOM % 50000 + 200000))
+            echo "(Reading database ... ${db_count} files and directories currently installed.)"
+            echo "Preparing to unpack .../${pkg}_${version}_amd64.deb ..."
+            echo "Unpacking ${pkg} (${version}) ..."
+            sleep 0.1
+        done
+
+        for pkg in "${to_install[@]}"; do
+            info=$(get_package_info "$pkg")
+            version=$(echo "$info" | cut -d'|' -f2)
+            echo "Setting up ${pkg} (${version}) ..."
+            add_apt_package "$pkg"
+            sleep 0.05
+        done
+
+        echo "Processing triggers for man-db (2.12.0-4build2) ..."
+        exit 0
+        ;;
+
+    remove)
+        shift
+        packages=()
+        purge=false
+        for arg in "$@"; do
+            if [[ "$arg" == "--purge" ]]; then
+                purge=true
+            elif [[ "$arg" != -* ]]; then
+                packages+=("$arg")
+            fi
+        done
+
+        if [ ${#packages[@]} -eq 0 ]; then
+            echo "E: Unable to locate package"
+            exit 1
+        fi
+
+        echo "Reading package lists... Done"
+        echo "Building dependency tree... Done"
+        echo "Reading state information... Done"
+
+        not_installed=()
+        to_remove=()
+
+        for pkg in "${packages[@]}"; do
+            if is_apt_package_installed "$pkg"; then
+                to_remove+=("$pkg")
+            else
+                not_installed+=("$pkg")
+            fi
+        done
+
+        for pkg in "${not_installed[@]}"; do
+            echo "Package '${pkg}' is not installed, so not removed"
+        done
+
+        if [ ${#to_remove[@]} -eq 0 ]; then
+            echo "0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded."
+            exit 0
+        fi
+
+        echo "The following packages will be REMOVED:"
+        echo "  ${to_remove[*]}"
+        echo "0 upgraded, 0 newly installed, ${#to_remove[@]} to remove and 0 not upgraded."
+
+        if [[ "$*" != *"-y"* ]]; then
+            echo -n "Do you want to continue? [Y/n] "
+            read -r response
+            if [[ ! "$response" =~ ^[Yy]?$ ]]; then
+                echo "Abort."
+                exit 1
+            fi
+        fi
+
+        for pkg in "${to_remove[@]}"; do
+            echo "(Reading database ... 245678 files and directories currently installed.)"
+            echo "Removing ${pkg} ..."
+            remove_apt_package "$pkg"
+            sleep 0.1
+        done
+
+        exit 0
+        ;;
+
+    purge)
+        shift
+        exec "$0" remove --purge "$@"
+        ;;
+
+    autoremove)
+        echo "Reading package lists... Done"
+        echo "Building dependency tree... Done"
+        echo "Reading state information... Done"
+        echo "0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded."
+        exit 0
+        ;;
+
+    autoclean|clean)
+        echo "Reading package lists... Done"
+        echo "Building dependency tree... Done"
+        echo "Reading state information... Done"
+        exit 0
+        ;;
+
+    search)
+        shift
+        term="$1"
+        if [ -z "$term" ]; then
+            echo "E: You must give at least one search pattern"
+            exit 1
+        fi
+
+        echo "Sorting... Done"
+        echo "Full Text Search... Done"
+
+        # Search in our package database
+        found=0
+        for pkg in "${!PACKAGE_INFO[@]}"; do
+            if [[ "$pkg" == *"$term"* ]] || [[ "${PACKAGE_INFO[$pkg]}" == *"$term"* ]]; then
+                info="${PACKAGE_INFO[$pkg]}"
+                version=$(echo "$info" | cut -d'|' -f2)
+                desc=$(echo "$info" | cut -d'|' -f4)
+                echo -e "${GREEN}${pkg}${NC}/${YELLOW}${UBUNTU_CODENAME}${NC} ${version} amd64"
+                echo "  ${desc}"
+                echo ""
+                ((found++))
+            fi
+        done
+
+        # Add some fake results for common searches
+        if [ $found -eq 0 ]; then
+            echo -e "${GREEN}${term}-utils${NC}/${YELLOW}${UBUNTU_CODENAME}${NC} 1.0.0-1 amd64"
+            echo "  Utilities related to ${term}"
+            echo ""
+            echo -e "${GREEN}lib${term}${NC}/${YELLOW}${UBUNTU_CODENAME}${NC} 2.0.0-1 amd64"
+            echo "  Library for ${term} functionality"
+            echo ""
+        fi
+        exit 0
+        ;;
+
+    show)
+        shift
+        pkg="$1"
+        if [ -z "$pkg" ]; then
+            echo "E: No packages found"
+            exit 1
+        fi
+
+        if [ -n "${PACKAGE_INFO[$pkg]}" ]; then
+            info="${PACKAGE_INFO[$pkg]}"
+            version=$(echo "$info" | cut -d'|' -f2)
+            size=$(echo "$info" | cut -d'|' -f3)
+            desc=$(echo "$info" | cut -d'|' -f4)
+        else
+            version="1.0.0-1"
+            size=$((RANDOM % 500 + 100))
+            desc="${pkg} package"
+        fi
+
+        echo "Package: ${pkg}"
+        echo "Version: ${version}"
+        echo "Priority: optional"
+        echo "Section: utils"
+        echo "Origin: Ubuntu"
+        echo "Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>"
+        echo "Bugs: https://bugs.launchpad.net/ubuntu/+filebug"
+        echo "Installed-Size: $((size * 3))"
+        echo "Depends: libc6 (>= 2.34)"
+        echo "Homepage: https://packages.ubuntu.com/${pkg}"
+        echo "Download-Size: ${size} kB"
+        echo "APT-Sources: http://archive.ubuntu.com/ubuntu ${UBUNTU_CODENAME}/main amd64 Packages"
+        echo "Description: ${desc}"
+        echo ""
+        exit 0
+        ;;
+
+    list)
+        shift
+        case "$1" in
+            --installed)
+                echo "Listing... Done"
+                # Show installed packages
+                get_installed_apt_packages | while read -r pkg; do
+                    if [ -n "${PACKAGE_INFO[$pkg]}" ]; then
+                        info="${PACKAGE_INFO[$pkg]}"
+                        version=$(echo "$info" | cut -d'|' -f2)
+                    else
+                        version="1.0.0-1"
+                    fi
+                    echo "${pkg}/${UBUNTU_CODENAME},now ${version} amd64 [installed]"
+                done
+                ;;
+            --upgradeable)
+                echo "Listing... Done"
+                # Show a few upgradeable packages randomly
+                if [ $((RANDOM % 2)) -eq 0 ]; then
+                    echo "libsystemd0/${UBUNTU_CODENAME}-updates 256.8-1ubuntu1 amd64 [upgradable from: 256.7-1ubuntu1]"
+                fi
+                ;;
+            *)
+                echo "Listing... Done"
+                # Show all known packages
+                for pkg in "${!PACKAGE_INFO[@]}"; do
+                    info="${PACKAGE_INFO[$pkg]}"
+                    version=$(echo "$info" | cut -d'|' -f2)
+                    if is_apt_package_installed "$pkg"; then
+                        echo "${pkg}/${UBUNTU_CODENAME} ${version} amd64 [installed]"
+                    else
+                        echo "${pkg}/${UBUNTU_CODENAME} ${version} amd64"
+                    fi
+                done
+                ;;
+        esac
+        exit 0
+        ;;
+
+    -h|--help|help)
+        echo "apt 2.9.8 (amd64)"
+        echo "Usage: apt [options] command"
+        echo ""
+        echo "Available commands in learning environment:"
+        echo "  update    - Download package information"
+        echo "  upgrade   - Upgrade installed packages"
+        echo "  install   - Install packages"
+        echo "  remove    - Remove packages"
+        echo "  autoremove - Remove unused dependencies"
+        echo "  search    - Search for packages"
+        echo "  show      - Show package details"
+        echo "  list      - List packages"
+        echo "  clean     - Clear package cache"
+        echo ""
+        echo "See apt(8) for more information about the available commands."
+        exit 0
+        ;;
+
+    dist-upgrade|full-upgrade)
+        show_learning_message "apt $1" "The '$1' command is not available in this learning environment. Use 'apt upgrade' instead for the exercises."
+        exit 1
+        ;;
+
+    edit-sources|source|build-dep)
+        show_learning_message "apt $1" "This apt command is not available in the learning environment."
+        exit 1
+        ;;
+
+    *)
+        if [ -z "$1" ]; then
+            echo "apt 2.9.8 (amd64)"
+            echo "Usage: apt [options] command"
+            echo ""
+            echo "Try 'apt --help' for more information."
+        else
+            show_learning_message "apt $1" "This apt subcommand is not available in the learning environment. Try 'apt --help' to see available commands."
+        fi
+        exit 1
+        ;;
+esac

@@ -95,7 +95,10 @@ apps:
     desktop: meta/gui/terminal-fun.desktop
     extensions: [gnome]
     plugs:
-      - home
+      - process-control
+      - mount-observe
+      - browser-support
+      - system-observe
     environment:
       PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/lib/python3.12/site-packages
       TERMINAL_FUN_LESSONS_DIR: $SNAP/lessons
@@ -130,6 +133,13 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/lessons
       cp -r lessons/* $CRAFT_PART_INSTALL/lessons/
 
+      # Install sandbox for mock privileged commands
+      mkdir -p $CRAFT_PART_INSTALL/sandbox/bin
+      mkdir -p $CRAFT_PART_INSTALL/sandbox/lib
+      cp sandbox/bin/* $CRAFT_PART_INSTALL/sandbox/bin/
+      cp sandbox/lib/* $CRAFT_PART_INSTALL/sandbox/lib/
+      chmod +x $CRAFT_PART_INSTALL/sandbox/bin/*
+
       # Install desktop file and icon
       mkdir -p $CRAFT_PART_INSTALL/meta/gui
       cp terminal-fun.desktop $CRAFT_PART_INSTALL/meta/gui/
@@ -141,6 +151,7 @@ parts:
       - git
       - vim-nox
       - vim-runtime
+      - bubblewrap
     organize:
       usr/bin/vim.nox: usr/bin/vim
 
