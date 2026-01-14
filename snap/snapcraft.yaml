@@ -95,10 +95,7 @@ apps:
     desktop: meta/gui/terminal-fun.desktop
     extensions: [gnome]
     plugs:
-      - process-control
-      - mount-observe
       - browser-support
-      - system-observe
     environment:
       PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/lib/python3.12/site-packages
       TERMINAL_FUN_LESSONS_DIR: $SNAP/lessons
