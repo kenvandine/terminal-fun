@@ -341,11 +341,11 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         header.set_title_widget(self.title_label)
 
         # Next button (right side)
-        next_content = Adw.ButtonContent()
-        next_content.set_icon_name("go-next-symbolic")
-        next_content.set_label("Next")
+        self.next_content = Adw.ButtonContent()
+        self.next_content.set_icon_name("go-next-symbolic")
+        self.next_content.set_label("Next")
         self.next_button = Gtk.Button()
-        self.next_button.set_child(next_content)
+        self.next_button.set_child(self.next_content)
         self.next_button.add_css_class("suggested-action")
         self.next_button.set_tooltip_text("Next Lesson")
         self.next_button.connect("clicked", self.on_next_clicked)
@@ -991,6 +991,41 @@ set statusline=%F%m%r%h%w\ [TYPE=%Y]\ [POS=%l,%v][%p%%]
         self.update_navigation_buttons()
         self.update_complete_button()
 
+    def get_next_section(self) -> Optional[tuple[str, str]]:
+        """Get the next section's category and first lesson slug.
+
+        Returns (category, first_lesson_slug) or None if no next section.
+        """
+        if not self.current_category:
+            return None
+
+        categories = self.lesson_loader.get_categories()
+        try:
+            current_cat_index = categories.index(self.current_category)
+            if current_cat_index < len(categories) - 1:
+                next_category = categories[current_cat_index + 1]
+                next_lessons = self.lesson_loader.get_lessons(next_category)
+                if next_lessons:
+                    return (next_category, next_lessons[0]['slug'])
+        except ValueError:
+            pass
+        return None
+
+    def is_last_lesson_in_section(self) -> bool:
+        """Check if current lesson is the last in its section."""
+        if not self.current_category or not self.current_lesson_slug:
+            return False
+
+        lessons = self.lesson_loader.get_lessons(self.current_category)
+        if not lessons:
+            return False
+
+        current_index = next(
+            (i for i, l in enumerate(lessons) if l['slug'] == self.current_lesson_slug),
+            -1
+        )
+        return current_index == len(lessons) - 1
+
     def update_navigation_buttons(self):
         """Update prev/next button states."""
         if not self.current_category:
@@ -1010,7 +1045,26 @@ set statusline=%F%m%r%h%w\ [TYPE=%Y]\ [POS=%l,%v][%p%%]
         )
 
         self.prev_button.set_sensitive(current_index > 0)
-        self.next_button.set_sensitive(current_index < len(lessons) - 1)
+
+        # Check if we're on the last lesson of this section
+        is_last = current_index == len(lessons) - 1
+        next_section = self.get_next_section()
+
+        if is_last and next_section:
+            # Show "Next Section" button
+            self.next_content.set_label("Next Section")
+            self.next_button.set_tooltip_text(f"Continue to {next_section[0]}")
+            self.next_button.set_sensitive(True)
+        elif is_last:
+            # Last lesson, no more sections
+            self.next_content.set_label("Next")
+            self.next_button.set_tooltip_text("Next Lesson")
+            self.next_button.set_sensitive(False)
+        else:
+            # Normal next lesson
+            self.next_content.set_label("Next")
+            self.next_button.set_tooltip_text("Next Lesson")
+            self.next_button.set_sensitive(True)
 
     def update_complete_button(self):
         """Update complete button state and text."""
@@ -1057,11 +1111,30 @@ set statusline=%F%m%r%h%w\ [TYPE=%Y]\ [POS=%l,%v][%p%%]
                 self.current_category,
                 self.current_lesson_slug
             )
-            toast = Adw.Toast.new("Lesson completed!")
+
+            # Check if this is the last lesson in the section
+            if self.is_last_lesson_in_section():
+                next_section = self.get_next_section()
+                if next_section:
+                    toast = Adw.Toast.new(f"Section complete! Continue to {next_section[0]}?")
+                    toast.set_button_label("Continue")
+                    toast.connect("button-clicked", self._on_toast_continue_clicked)
+                    toast.set_timeout(5)
+                else:
+                    toast = Adw.Toast.new("Congratulations! You've completed all lessons!")
+                    toast.set_timeout(5)
+            else:
+                toast = Adw.Toast.new("Lesson completed!")
 
         self.toast_overlay.add_toast(toast)
 
         self.update_complete_button()
+
+    def _on_toast_continue_clicked(self, toast):
+        """Handle clicking Continue on the section complete toast."""
+        next_section = self.get_next_section()
+        if next_section:
+            self.load_lesson(next_section[0], next_section[1])
 
     def on_terminal_key_pressed(self, controller, keyval, keycode, state):
         """Handle keyboard shortcuts in the terminal."""
@@ -1096,7 +1169,7 @@ set statusline=%F%m%r%h%w\ [TYPE=%Y]\ [POS=%l,%v][%p%%]
             self.load_lesson(self.current_category, lessons[current_index - 1]['slug'])
 
     def on_next_clicked(self, button):
-        """Load next lesson."""
+        """Load next lesson or next section."""
         if not self.current_category or not self.current_lesson_slug:
             return
 
@@ -1107,7 +1180,13 @@ set statusline=%F%m%r%h%w\ [TYPE=%Y]\ [POS=%l,%v][%p%%]
         )
 
         if current_index < len(lessons) - 1:
+            # Next lesson in same section
             self.load_lesson(self.current_category, lessons[current_index + 1]['slug'])
+        else:
+            # Last lesson - try to go to next section
+            next_section = self.get_next_section()
+            if next_section:
+                self.load_lesson(next_section[0], next_section[1])
 
     def on_index_clicked(self, button):
         """Show lesson index dialog."""
