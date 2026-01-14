@@ -324,6 +324,40 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         self.index_button.connect("clicked", self.on_index_clicked)
         header.pack_start(self.index_button)
 
+        # Previous/Back button (left side)
+        prev_content = Adw.ButtonContent()
+        prev_content.set_icon_name("go-previous-symbolic")
+        prev_content.set_label("Back")
+        self.prev_button = Gtk.Button()
+        self.prev_button.set_child(prev_content)
+        self.prev_button.add_css_class("flat")
+        self.prev_button.set_tooltip_text("Previous Lesson")
+        self.prev_button.connect("clicked", self.on_prev_clicked)
+        header.pack_start(self.prev_button)
+
+        # Lesson title (center)
+        self.title_label = Gtk.Label(label="Terminal Fun")
+        self.title_label.add_css_class("title")
+        header.set_title_widget(self.title_label)
+
+        # Next button (right side)
+        next_content = Adw.ButtonContent()
+        next_content.set_icon_name("go-next-symbolic")
+        next_content.set_label("Next")
+        self.next_button = Gtk.Button()
+        self.next_button.set_child(next_content)
+        self.next_button.add_css_class("suggested-action")
+        self.next_button.set_tooltip_text("Next Lesson")
+        self.next_button.connect("clicked", self.on_next_clicked)
+        header.pack_end(self.next_button)
+
+        # Complete button (right side)
+        self.complete_button = Gtk.Button(label="Mark Complete")
+        self.complete_button.add_css_class("suggested-action")
+        self.complete_button.set_tooltip_text("Mark lesson as complete")
+        self.complete_button.connect("clicked", self.on_complete_clicked)
+        header.pack_end(self.complete_button)
+
         # Main box (paned for resizable split)
         main_paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         main_paned.set_shrink_start_child(False)
@@ -347,30 +381,6 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         lesson_scrolled.set_child(self.lesson_viewer)
 
         left_pane.append(lesson_scrolled)
-
-        # Navigation buttons
-        nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        nav_box.set_margin_start(20)
-        nav_box.set_margin_end(20)
-        nav_box.set_margin_bottom(12)
-        nav_box.set_margin_top(8)
-
-        self.prev_button = Gtk.Button(label="← Previous")
-        self.prev_button.connect("clicked", self.on_prev_clicked)
-        nav_box.append(self.prev_button)
-
-        # Mark complete button (center, expands)
-        self.complete_button = Gtk.Button(label="Mark Complete")
-        self.complete_button.add_css_class("suggested-action")
-        self.complete_button.set_hexpand(True)
-        self.complete_button.connect("clicked", self.on_complete_clicked)
-        nav_box.append(self.complete_button)
-
-        self.next_button = Gtk.Button(label="Next →")
-        self.next_button.connect("clicked", self.on_next_clicked)
-        nav_box.append(self.next_button)
-
-        left_pane.append(nav_box)
 
         # Right pane: Terminal
         right_pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
@@ -536,7 +546,11 @@ class TerminalFunWindow(Adw.ApplicationWindow):
         content_box.append(header)
         content_box.append(main_paned)
 
-        self.set_content(content_box)
+        # Toast overlay for notifications
+        self.toast_overlay = Adw.ToastOverlay()
+        self.toast_overlay.set_child(content_box)
+
+        self.set_content(self.toast_overlay)
 
         # Load first lesson
         GLib.idle_add(self.load_first_lesson)
@@ -970,6 +984,10 @@ set statusline=%F%m%r%h%w\ [TYPE=%Y]\ [POS=%l,%v][%p%%]
         self.current_category = category
         self.current_lesson_slug = lesson_slug
         self.lesson_viewer.display_lesson(lesson)
+
+        # Update headerbar title
+        self.title_label.set_label(lesson.get('title', 'Terminal Fun'))
+
         self.update_navigation_buttons()
         self.update_complete_button()
 
@@ -1032,12 +1050,16 @@ set statusline=%F%m%r%h%w\ [TYPE=%Y]\ [POS=%l,%v][%p%%]
                 self.current_category,
                 self.current_lesson_slug
             )
+            toast = Adw.Toast.new("Lesson marked incomplete")
         else:
             # Complete it
             self.progress_tracker.complete_lesson(
                 self.current_category,
                 self.current_lesson_slug
             )
+            toast = Adw.Toast.new("Lesson completed!")
+
+        self.toast_overlay.add_toast(toast)
 
         self.update_complete_button()
 
