@@ -1,43 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
   <defs>
+    <!-- Yaru-style gradient for depth -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#924D8B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#77216F;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Terminal window gradient -->
     <linearGradient id="terminalGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#5e5c64;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#241f31;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#3D3D3D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2C2C2C;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="screenGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#300a24;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1e0a18;stop-opacity:1" />
-    </linearGradient>
+
+    <!-- Subtle shadow -->
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
   </defs>
 
-  <!-- Background circle -->
-  <circle cx="256" cy="256" r="240" fill="url(#terminalGradient)"/>
+  <!-- Squircle background (GNOME app icon shape) -->
+  <path d="M 64,4
+           C 97,4 106,4 114,12
+           C 122,20 124,31 124,64
+           C 124,97 122,108 114,116
+           C 106,124 97,124 64,124
+           C 31,124 20,124 12,116
+           C 4,108 4,97 4,64
+           C 4,31 4,20 12,12
+           C 20,4 31,4 64,4 Z"
+        fill="url(#bgGradient)"/>
 
-  <!-- Terminal window background -->
-  <rect x="80" y="120" width="352" height="280" rx="16" fill="url(#screenGradient)"/>
+  <!-- Terminal window -->
+  <rect x="20" y="28" width="88" height="72" rx="6" ry="6"
+        fill="url(#terminalGradient)" filter="url(#shadow)"/>
 
-  <!-- Terminal window header bar -->
-  <rect x="80" y="120" width="352" height="40" rx="16" fill="#3d3846"/>
-  <rect x="80" y="144" width="352" height="16" fill="#3d3846"/>
+  <!-- Terminal header bar -->
+  <rect x="20" y="28" width="88" height="16" rx="6" ry="6" fill="#3D3D3D"/>
+  <rect x="20" y="38" width="88" height="6" fill="#3D3D3D"/>
 
-  <!-- Window control buttons (Ubuntu style) -->
-  <circle cx="108" cy="140" r="8" fill="#f66151"/>
-  <circle cx="136" cy="140" r="8" fill="#ffc83d"/>
-  <circle cx="164" cy="140" r="8" fill="#57e389"/>
+  <!-- Window buttons -->
+  <circle cx="32" cy="36" r="4" fill="#ED6A5E"/>
+  <circle cx="44" cy="36" r="4" fill="#F5BF4F"/>
+  <circle cx="56" cy="36" r="4" fill="#61C554"/>
 
-  <!-- Terminal prompt and text -->
-  <text x="100" y="200" font-family="monospace" font-size="24" font-weight="bold" fill="#33d17a">$</text>
-  <text x="130" y="200" font-family="monospace" font-size="24" fill="#99c1f1">ls -la</text>
+  <!-- Terminal prompt line 1: $ ls -->
+  <text x="28" y="60" font-family="monospace" font-size="11" font-weight="bold" fill="#5BDF5B">$</text>
+  <text x="40" y="60" font-family="monospace" font-size="11" fill="#FFFFFF">ls -la</text>
 
-  <!-- File listing simulation -->
-  <text x="100" y="240" font-family="monospace" font-size="16" fill="#deddda">drwxr-xr-x lessons</text>
-  <text x="100" y="270" font-family="monospace" font-size="16" fill="#deddda">-rwxr-xr-x main.py</text>
-  <text x="100" y="300" font-family="monospace" font-size="16" fill="#deddda">-rw-r--r-- README.md</text>
+  <!-- Terminal output line -->
+  <text x="28" y="75" font-family="monospace" font-size="9" fill="#AAAAAA">drwxr-xr-x</text>
 
-  <!-- Cursor blink -->
-  <rect x="232" y="182" width="12" height="24" fill="#f37329" opacity="0.9"/>
-
-  <!-- Subtle border -->
-  <circle cx="256" cy="256" r="240" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.1"/>
+  <!-- Cursor prompt line 2 -->
+  <text x="28" y="90" font-family="monospace" font-size="11" font-weight="bold" fill="#5BDF5B">$</text>
+  <rect x="40" y="82" width="8" height="12" fill="#E95420"/>
 </svg>
