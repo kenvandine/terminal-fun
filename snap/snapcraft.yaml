@@ -88,6 +88,9 @@ source-code: https://github.com/kenvandine/terminal-fun
 
 grade: stable
 confinement: strict
+platforms:
+  amd64:
+  arm64:
 
 apps:
   terminal-fun:
